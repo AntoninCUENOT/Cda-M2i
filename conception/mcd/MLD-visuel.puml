@@ -1,0 +1,134 @@
+@startuml MLD - AnimeTracker (Partie 1)
+
+' Style
+skinparam linetype ortho
+
+title Modèle Logique de Données (MLD) - Partie 1: Entités Principales
+
+' ============================
+' TABLES PRINCIPALES
+' ============================
+
+entity USER {
+  * id_user : UUID <<PK>>
+  --
+  email : VARCHAR(255) <<UQ>>
+  password : VARCHAR(255)
+  pseudo : VARCHAR(50) <<UQ>>
+  photo : VARCHAR(500)
+  bio : TEXT
+  role : ENUM
+  is_active : BOOLEAN
+  is_suspended : BOOLEAN
+  suspension_end_date : TIMESTAMP
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity ANIME {
+  * id_anime : INTEGER <<PK>>
+  --
+  title : VARCHAR(255)
+  title_english : VARCHAR(255)
+  synopsis : TEXT
+  image_url : VARCHAR(500)
+  trailer_url : VARCHAR(500)
+  episodes : INTEGER
+  score : DECIMAL(3,2)
+  year : INTEGER
+  status : VARCHAR(50)
+  aired_from : DATE
+  aired_to : DATE
+  last_fetched_at : TIMESTAMP
+  # id_studio : INTEGER <<FK>>
+}
+
+entity GENRE {
+  * id_genre : SERIAL <<PK>>
+  --
+  name : VARCHAR(100) <<UQ>>
+}
+
+entity STUDIO {
+  * id_studio : SERIAL <<PK>>
+  --
+  name : VARCHAR(255) <<UQ>>
+}
+
+entity USER_ANIME {
+  * id_user_anime : UUID <<PK>>
+  --
+  # id_user : UUID <<FK>>
+  # id_anime : INTEGER <<FK>>
+  status : ENUM
+  episodes_watched : INTEGER
+  started_at : TIMESTAMP
+  completed_at : TIMESTAMP
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  --
+  <<UQ>> (id_user, id_anime)
+}
+
+entity REVIEW {
+  * id_review : UUID <<PK>>
+  --
+  # id_user : UUID <<FK>>
+  # id_anime : INTEGER <<FK>>
+  rating : DECIMAL(3,1)
+  comment : TEXT
+  visibility : ENUM
+  likes_count : INTEGER
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  --
+  <<UQ>> (id_user, id_anime)
+}
+
+entity REVIEW_LIKE {
+  * id_review_like : UUID <<PK>>
+  --
+  # id_review : UUID <<FK>>
+  # id_user : UUID <<FK>>
+  created_at : TIMESTAMP
+  --
+  <<UQ>> (id_review, id_user)
+}
+
+entity FOLLOW {
+  * id_follow : UUID <<PK>>
+  --
+  # id_follower : UUID <<FK>>
+  # id_following : UUID <<FK>>
+  created_at : TIMESTAMP
+  --
+  <<UQ>> (id_follower, id_following)
+}
+
+entity ANIME_GENRE {
+  * id_anime : INTEGER <<PK,FK>>
+  * id_genre : INTEGER <<PK,FK>>
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+USER ||--o{ USER_ANIME : "possède"
+ANIME ||--o{ USER_ANIME : "suivi par"
+
+USER ||--o{ REVIEW : "écrit"
+ANIME ||--o{ REVIEW : "évalué par"
+
+USER ||--o{ REVIEW_LIKE : "like"
+REVIEW ||--o{ REVIEW_LIKE : "aimé par"
+
+USER ||--o{ FOLLOW : "follower"
+USER ||--o{ FOLLOW : "following"
+
+ANIME ||--o{ ANIME_GENRE : ""
+GENRE ||--o{ ANIME_GENRE : ""
+
+STUDIO ||--o{ ANIME : "produit"
+
+@enduml

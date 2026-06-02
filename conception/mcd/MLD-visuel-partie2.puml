@@ -1,0 +1,100 @@
+@startuml MLD - AnimeTracker (Partie 2)
+
+' Style
+skinparam linetype ortho
+
+title Modèle Logique de Données (MLD) - Partie 2: Social & Groupes
+
+' ============================
+' TABLES
+' ============================
+
+entity USER {
+  * id_user : UUID <<PK>>
+  --
+  pseudo : VARCHAR(50)
+}
+
+entity CONVERSATION {
+  * id_conversation : UUID <<PK>>
+  --
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity CONVERSATION_PARTICIPANT {
+  * id_participant : UUID <<PK>>
+  --
+  # id_conversation : UUID <<FK>>
+  # id_user : UUID <<FK>>
+  joined_at : TIMESTAMP
+  --
+  <<UQ>> (id_conversation, id_user)
+}
+
+entity MESSAGE {
+  * id_message : UUID <<PK>>
+  --
+  # id_conversation : UUID <<FK>>
+  # id_sender : UUID <<FK>>
+  content : TEXT
+  is_read : BOOLEAN
+  created_at : TIMESTAMP
+}
+
+entity GROUP {
+  * id_group : UUID <<PK>>
+  --
+  name : VARCHAR(255)
+  description : TEXT
+  type : ENUM
+  # id_anime : INTEGER <<FK>>
+  # id_creator : UUID <<FK>>
+  is_public : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+  --
+  <<UQ>> (type, id_anime) WHERE type='OFFICIEL'
+}
+
+entity GROUP_MEMBER {
+  * id_member : UUID <<PK>>
+  --
+  # id_group : UUID <<FK>>
+  # id_user : UUID <<FK>>
+  is_moderator : BOOLEAN
+  joined_at : TIMESTAMP
+  --
+  <<UQ>> (id_group, id_user)
+}
+
+entity GROUP_MESSAGE {
+  * id_group_message : UUID <<PK>>
+  --
+  # id_group : UUID <<FK>>
+  # id_author : UUID <<FK>>
+  content : TEXT
+  created_at : TIMESTAMP
+  deleted_at : TIMESTAMP
+  # id_deleted_by : UUID <<FK>>
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+USER ||--o{ CONVERSATION_PARTICIPANT : "participe"
+CONVERSATION ||--o{ CONVERSATION_PARTICIPANT : "a"
+
+CONVERSATION ||--o{ MESSAGE : "contient"
+USER ||--o{ MESSAGE : "envoie"
+
+USER ||--o{ GROUP : "crée"
+USER ||--o{ GROUP_MEMBER : "membre"
+GROUP ||--o{ GROUP_MEMBER : "a"
+
+USER ||--o{ GROUP_MESSAGE : "poste"
+GROUP ||--o{ GROUP_MESSAGE : "contient"
+USER ||--o{ GROUP_MESSAGE : "supprime"
+
+@enduml

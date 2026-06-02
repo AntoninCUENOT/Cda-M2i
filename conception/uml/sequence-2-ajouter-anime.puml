@@ -1,0 +1,144 @@
+@startuml Diagramme de séquence - Ajouter un anime
+
+title Scénario : Ajouter un anime à sa bibliothèque
+
+actor Utilisateur as user
+participant "Application\nMobile" as app
+participant "API\nBackend" as api
+participant "Jikan API" as jikan
+database "Base de\nDonnées" as db
+
+== Recherche d'anime ==
+
+user -> app : Recherche "One Piece"
+activate app
+
+app -> api : GET /animes/search?q=One Piece
+activate api
+
+api -> jikan : GET /anime?q=One Piece&limit=20
+activate jikan
+jikan --> api : Liste animes\n(JSON avec id, titre, image, score...)
+deactivate jikan
+
+api -> api : Transforme et nettoie\nles données
+
+api --> app : 200 OK\n[{animes résultats}]
+deactivate api
+
+app --> user : Affiche liste résultats
+deactivate app
+
+== Consultation fiche détaillée ==
+
+user -> app : Clique sur anime\n(id: 21)
+activate app
+
+app -> api : GET /animes/21
+activate api
+
+api -> db : SELECT * FROM anime\nWHERE id_anime = 21
+activate db
+
+alt Anime en cache (récent)
+    db --> api : Données anime
+    deactivate db
+
+    api --> app : 200 OK\n{anime détails}
+
+else Anime absent ou cache expiré
+    db --> api : NULL ou données anciennes
+    deactivate db
+
+    api -> jikan : GET /anime/21/full
+    activate jikan
+    jikan --> api : Données complètes anime
+    deactivate jikan
+
+    api -> db : INSERT/UPDATE anime\n(id, title, synopsis, episodes, score...)
+    activate db
+    db --> api : OK
+    deactivate db
+
+    api -> db : Récupère/crée genres et studio
+    activate db
+    db --> api : OK
+    deactivate db
+
+    api --> app : 200 OK\n{anime détails}
+end
+
+deactivate api
+
+app --> user : Affiche fiche complète\n(synopsis, épisodes, genres, trailer...)
+deactivate app
+
+== Ajout à la bibliothèque ==
+
+user -> app : Clique "Ajouter à ma liste"\nSélectionne statut "À voir"
+activate app
+
+app -> api : POST /users/me/animes\n{anime_id: 21, status: "A_VOIR"}
+activate api
+
+api -> api : Vérifie JWT et extrait id_user
+
+api -> db : SELECT * FROM user_anime\nWHERE id_user = ? AND id_anime = 21
+activate db
+
+alt Anime déjà dans la bibliothèque
+    db --> api : Enregistrement existant
+    deactivate db
+
+    api --> app : 409 Conflict\n{error: "Anime déjà dans votre liste"}
+    deactivate api
+
+    app --> user : Message: "Anime déjà ajouté"
+    deactivate app
+
+else Anime pas encore ajouté
+    db --> api : NULL
+    deactivate db
+
+    api -> db : INSERT INTO user_anime\n(id_user, id_anime, status='A_VOIR',\nepisodes_watched=0)
+    activate db
+    db --> api : Enregistrement créé
+    deactivate db
+
+    api --> app : 201 Created\n{user_anime détails}
+    deactivate api
+
+    app -> app : Met à jour l'UI\n(bouton devient "Dans ma liste")
+
+    app --> user : Confirmation visuelle\nBadge "À voir" affiché
+    deactivate app
+end
+
+== Création automatique du groupe officiel ==
+
+note over api, db
+  Si le groupe officiel n'existe pas encore,
+  il est créé automatiquement lors de la
+  première consultation de l'anime
+end note
+
+api -> db : SELECT * FROM "group"\nWHERE type='OFFICIEL' AND id_anime=21
+activate api
+activate db
+
+alt Groupe officiel existe
+    db --> api : Groupe existant
+
+else Groupe officiel n'existe pas
+    db --> api : NULL
+    deactivate db
+
+    api -> db : INSERT INTO "group"\n(name="Discussion - One Piece",\ntype='OFFICIEL', id_anime=21,\nid_creator=system_user)
+    activate db
+    db --> api : Groupe créé
+    deactivate db
+end
+
+deactivate api
+
+@enduml

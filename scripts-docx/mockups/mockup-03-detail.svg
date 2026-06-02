@@ -1,0 +1,85 @@
+
+<svg width="390" height="844" viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond écran -->
+  <rect x="0" y="0" width="390" height="844" rx="44" fill="#fff" />
+  <!-- Barre de statut -->
+  <rect x="0" y="0" width="390" height="44" rx="0" fill="rgba(0,0,0,0.03)" />
+  <text x="20" y="28" font-size="13" fill="#111827" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">9:41</text>
+  <text x="370" y="28" font-size="11" fill="#6B7280" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">●●● ☁ 🔋</text>
+  <!-- Contenu -->
+  
+  <!-- Cover image -->
+  <rect x="0" y="44" width="390" height="220" rx="0" fill="#4F46E5" />
+  <text x="195" y="154" font-size="28" fill="rgba(255,255,255,0.15)" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">One Piece</text>
+  <text x="195" y="200" font-size="48" fill="rgba(255,255,255,0.3)" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">▶</text>
+  <!-- Back button -->
+  <rect x="12" y="54" width="36" height="36" rx="18" fill="rgba(0,0,0,0.35)" />
+  <g color="white"><path d="M31,64 L24,70 L31,76" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+
+  <!-- Info principale -->
+  <rect x="0" y="252" width="390" height="592" rx="0" fill="#FFFFFF" />
+  <text x="16" y="290" font-size="22" fill="#1E1B4B" font-weight="700" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">One Piece</text>
+  <text x="16" y="314" font-size="14" fill="#F59E0B" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">★ 9.0 / 10</text>
+  <text x="100" y="314" font-size="12" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">(1 250 avis)</text>
+
+  <!-- Genres -->
+  <rect x="16" y="324" width="72" height="24" rx="12" fill="#EDE9FE"/>
+   <text x="52" y="340" font-size="12" fill="#8B5CF6" text-anchor="middle" font-family="SF Pro Display, sans-serif" font-weight="600">Shōnen</text>
+  <rect x="96" y="324" width="80" height="24" rx="12" fill="#EDE9FE"/>
+   <text x="136" y="340" font-size="12" fill="#8B5CF6" text-anchor="middle" font-family="SF Pro Display, sans-serif" font-weight="600">Adventure</text>
+  <rect x="184" y="324" width="66" height="24" rx="12" fill="#EDE9FE"/>
+   <text x="217" y="340" font-size="12" fill="#8B5CF6" text-anchor="middle" font-family="SF Pro Display, sans-serif" font-weight="600">Fantasy</text>
+
+  <text x="16" y="374" font-size="12" fill="#6B7280" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">1997  •  1100 épisodes  •  En cours</text>
+
+  <!-- Bouton ajouter -->
+  <rect x="16" y="390" width="358" height="46" rx="12" fill="#8B5CF6" />
+  <text x="195" y="418" font-size="14" fill="#fff" font-weight="600" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">+ Ajouter à ma bibliothèque</text>
+
+  <!-- Synopsis -->
+  <text x="16" y="460" font-size="14" fill="#111827" font-weight="700" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Synopsis</text>
+  <text x="16" y="482" font-size="12" fill="#6B7280" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Monkey D. Luffy rêve de devenir le roi des pirates</text>
+  <text x="16" y="500" font-size="12" fill="#6B7280" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">en trouvant le trésor légendaire One Piece...</text>
+  <text x="16" y="518" font-size="12" fill="#8B5CF6" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Lire la suite</text>
+
+  <!-- Tabs -->
+  <rect x="0" y="538" width="390" height="40" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="578" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <text x="65" y="563" font-size="14" fill="#8B5CF6" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Infos</text>
+  <rect x="16" y="576" width="98" height="2" rx="0" fill="#8B5CF6" />
+  <text x="195" y="563" font-size="14" fill="#6B7280" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Avis</text>
+  <text x="325" y="563" font-size="14" fill="#6B7280" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Groupes</text>
+
+  <!-- Infos tab -->
+  <text x="16" y="612" font-size="12" fill="#9CA3AF" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Studio</text>
+  <text x="120" y="612" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Toei Animation</text>
+  <text x="16" y="636" font-size="12" fill="#9CA3AF" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Diffusion</text>
+  <text x="120" y="636" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Oct. 1999 — En cours</text>
+  <text x="16" y="660" font-size="12" fill="#9CA3AF" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Source</text>
+  <text x="120" y="660" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Manga</text>
+  <text x="16" y="684" font-size="12" fill="#9CA3AF" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Épisodes</text>
+  <text x="120" y="684" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">1 100 (en cours)</text>
+
+  <g color="#9CA3AF">
+      <path d="M31,784 L39,776 L47,784 V792 H42 V787 H36 V792 H31 Z" fill="currentColor"/>
+      <text x="39" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Accueil</text>
+    </g><g color="#8B5CF6">
+      <circle cx="116" cy="783" r="5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="120" y1="787" x2="124" y2="791" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <text x="117" y="798" font-size="9" fill="#8B5CF6" font-weight="600" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Recherche</text>
+    </g><g color="#9CA3AF">
+      <rect x="188" y="776" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="192" y1="781" x2="198" y2="781" stroke="currentColor" stroke-width="1.5"/><line x1="192" y1="784" x2="198" y2="784" stroke="currentColor" stroke-width="1.5"/><line x1="192" y1="787" x2="196" y2="787" stroke="currentColor" stroke-width="1.5"/>
+      <text x="195" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Biblio</text>
+    </g><g color="#9CA3AF">
+      <path d="M266,778 Q266,776 268,776 H278 Q280,776 280,778 V785 Q280,787 278,787 H271 L267,791 V787 H268 Q266,787 266,785 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="273" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Messages</text>
+    </g><g color="#9CA3AF">
+      <circle cx="351" cy="781" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M344,792 Q344,787 351,787 Q358,787 358,792" fill="none" stroke="currentColor" stroke-width="2"/>
+      <text x="351" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Profil</text>
+    </g>
+
+  <!-- Barre de navigation -->
+  <rect x="0" y="764" width="390" height="80" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="764" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <!-- Indicateur home -->
+  <rect x="135" y="836" width="120" height="4" rx="2" fill="#000" />
+</svg>

@@ -1,0 +1,279 @@
+@startuml MPD - Schema PostgreSQL - AnimeTracker
+
+' Style pour ressembler à un vrai schéma de base de données
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+title Modèle Physique de Données (MPD) - PostgreSQL - Vue d'ensemble
+
+package "Tables Utilisateurs" <<Database>> {
+  class user <<table>> {
+    + id_user: UUID [PK]
+    --
+    email: VARCHAR(255) [UQ]
+    password: VARCHAR(255)
+    pseudo: VARCHAR(50) [UQ]
+    photo: VARCHAR(500)
+    bio: TEXT
+    role: user_role
+    is_active: BOOLEAN
+    is_suspended: BOOLEAN
+    suspension_end_date: TIMESTAMP
+    created_at: TIMESTAMP
+    updated_at: TIMESTAMP
+    --
+    Indexes:
+    - idx_user_email
+    - idx_user_pseudo
+    - idx_user_role
+  }
+}
+
+package "Tables Anime" <<Database>> {
+  class anime <<table>> {
+    + id_anime: INTEGER [PK]
+    --
+    title: VARCHAR(255)
+    title_english: VARCHAR(255)
+    synopsis: TEXT
+    image_url: VARCHAR(500)
+    episodes: INTEGER
+    score: DECIMAL(3,2)
+    year: INTEGER
+    status: VARCHAR(50)
+    id_studio: INTEGER [FK]
+    --
+    Indexes:
+    - idx_anime_title
+    - idx_anime_year
+    - idx_anime_score
+  }
+
+  class genre <<table>> {
+    + id_genre: SERIAL [PK]
+    --
+    name: VARCHAR(100) [UQ]
+  }
+
+  class studio <<table>> {
+    + id_studio: SERIAL [PK]
+    --
+    name: VARCHAR(255) [UQ]
+  }
+}
+
+package "Tables Relations User-Anime" <<Database>> {
+  class user_anime <<table>> {
+    + id_user_anime: UUID [PK]
+    --
+    id_user: UUID [FK]
+    id_anime: INTEGER [FK]
+    status: anime_status
+    episodes_watched: INTEGER
+    started_at: TIMESTAMP
+    completed_at: TIMESTAMP
+    --
+    UNIQUE(id_user, id_anime)
+    Indexes:
+    - idx_user_anime_user
+    - idx_user_anime_anime
+  }
+
+  class review <<table>> {
+    + id_review: UUID [PK]
+    --
+    id_user: UUID [FK]
+    id_anime: INTEGER [FK]
+    rating: DECIMAL(3,1)
+    comment: TEXT
+    visibility: visibility_type
+    likes_count: INTEGER
+    --
+    UNIQUE(id_user, id_anime)
+    CHECK: rating 0-10 (0.5)
+    Indexes:
+    - idx_review_user
+    - idx_review_anime
+  }
+
+  class review_like <<table>> {
+    + id_review_like: UUID [PK]
+    --
+    id_review: UUID [FK]
+    id_user: UUID [FK]
+    --
+    UNIQUE(id_review, id_user)
+  }
+
+  class anime_genre <<table>> {
+    + id_anime: INTEGER [PK,FK]
+    + id_genre: INTEGER [PK,FK]
+  }
+}
+
+package "Tables Social" <<Database>> {
+  class follow <<table>> {
+    + id_follow: UUID [PK]
+    --
+    id_follower: UUID [FK]
+    id_following: UUID [FK]
+    --
+    UNIQUE(id_follower, id_following)
+    CHECK: no self-follow
+  }
+
+  class conversation <<table>> {
+    + id_conversation: UUID [PK]
+    --
+    created_at: TIMESTAMP
+    updated_at: TIMESTAMP
+  }
+
+  class conversation_participant <<table>> {
+    + id_participant: UUID [PK]
+    --
+    id_conversation: UUID [FK]
+    id_user: UUID [FK]
+    --
+    UNIQUE(id_conversation, id_user)
+  }
+
+  class message <<table>> {
+    + id_message: UUID [PK]
+    --
+    id_conversation: UUID [FK]
+    id_sender: UUID [FK]
+    content: TEXT
+    is_read: BOOLEAN
+    --
+    Indexes:
+    - idx_message_conversation
+  }
+}
+
+package "Tables Groupes" <<Database>> {
+  class group <<table>> {
+    + id_group: UUID [PK]
+    --
+    name: VARCHAR(255)
+    description: TEXT
+    type: group_type
+    id_anime: INTEGER [FK]
+    id_creator: UUID [FK]
+    is_public: BOOLEAN
+    --
+    UNIQUE(id_anime) WHERE type='OFFICIEL'
+  }
+
+  class group_member <<table>> {
+    + id_member: UUID [PK]
+    --
+    id_group: UUID [FK]
+    id_user: UUID [FK]
+    is_moderator: BOOLEAN
+    --
+    UNIQUE(id_group, id_user)
+  }
+
+  class group_message <<table>> {
+    + id_group_message: UUID [PK]
+    --
+    id_group: UUID [FK]
+    id_author: UUID [FK]
+    content: TEXT
+    deleted_at: TIMESTAMP
+    id_deleted_by: UUID [FK]
+  }
+}
+
+package "Tables Notifications" <<Database>> {
+  class notification <<table>> {
+    + id_notification: UUID [PK]
+    --
+    id_user: UUID [FK]
+    type: notification_type
+    title: VARCHAR(255)
+    message: TEXT
+    is_read: BOOLEAN
+    --
+    Indexes:
+    - idx_notification_user
+    - idx_notification_read
+  }
+
+  class notification_preferences <<table>> {
+    + id_preferences: UUID [PK]
+    --
+    id_user: UUID [FK,UQ]
+    new_follower: BOOLEAN
+    new_episode: BOOLEAN
+    new_message: BOOLEAN
+    group_reply: BOOLEAN
+  }
+}
+
+package "Tables Modération" <<Database>> {
+  class report <<table>> {
+    + id_report: UUID [PK]
+    --
+    id_reporter: UUID [FK]
+    reported_entity_type: reported_entity
+    reported_entity_id: UUID
+    reason: VARCHAR(255)
+    status: report_status
+    id_reviewed_by: UUID [FK]
+  }
+}
+
+' Relations principales
+user "1" -- "0..*" user_anime
+user "1" -- "0..*" review
+user "1" -- "0..*" follow
+user "1" -- "0..*" notification
+
+anime "1" -- "0..*" user_anime
+anime "1" -- "0..*" review
+anime "0..*" -- "0..*" genre
+anime "0..*" -- "0..1" studio
+
+review "1" -- "0..*" review_like
+
+conversation "1" -- "2..*" conversation_participant
+conversation "1" -- "0..*" message
+
+group "1" -- "0..*" group_member
+group "1" -- "0..*" group_message
+
+note right of user
+  **Triggers:**
+  - update_updated_at
+
+  **Contraintes:**
+  - Email format regex
+  - Pseudo min 3 chars
+end note
+
+note right of review
+  **Triggers:**
+  - update_updated_at
+  - increment_review_likes (via review_like)
+
+  **Contraintes:**
+  - Rating: 0-10 (0.5 steps)
+  - Comment max 2000 chars
+end note
+
+note right of group
+  **Contraintes:**
+  - 1 seul groupe OFFICIEL par anime
+  - Groupe OFFICIEL doit avoir id_anime
+end note
+
+note bottom of anime
+  **Source de données:**
+  Synchronisé avec Jikan API v4
+  Cache local pour performance
+end note
+
+@enduml

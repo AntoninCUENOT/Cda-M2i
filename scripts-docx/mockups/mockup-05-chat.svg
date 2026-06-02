@@ -1,0 +1,92 @@
+
+<svg width="390" height="844" viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond écran -->
+  <rect x="0" y="0" width="390" height="844" rx="44" fill="#F3F4F6" />
+  <!-- Barre de statut -->
+  <rect x="0" y="0" width="390" height="44" rx="0" fill="rgba(0,0,0,0.03)" />
+  <text x="20" y="28" font-size="13" fill="#111827" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">9:41</text>
+  <text x="370" y="28" font-size="11" fill="#6B7280" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">●●● ☁ 🔋</text>
+  <!-- Contenu -->
+  
+  <!-- Header -->
+  <rect x="0" y="44" width="390" height="60" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="104" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <g color="#111827"><path d="M25,62 L18,68 L25,74" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+  <circle cx="52" cy="74" r="18" fill="#EDE9FE"/>
+  <text x="52" y="79" font-size="14" fill="#8B5CF6" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">K</text>
+  <text x="78" y="68" font-size="15" fill="#111827" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Kira_fan42</text>
+  <text x="78" y="88" font-size="11" fill="#10B981" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Vu il y a 2h</text>
+  <text x="374" y="78" font-size="20" fill="#6B7280" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">⋮</text>
+
+  <!-- Séparateur date -->
+  <rect x="80" y="124" width="230" height="1" rx="0" fill="#E5E7EB" />
+  <text x="195" y="120" font-size="11" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Hier</text>
+  <rect x="310" y="124" width="230" height="1" rx="0" fill="#E5E7EB" />
+
+  <!-- Messages -->
+  <rect x="20" y="136" width="200" height="36" rx="14 14 14 4" fill="#FFFFFF" />
+   <text x="32" y="158" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Salut ! T'as vu le dernier épisode ?</text>
+  <text x="228" y="184" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">10:32</text>
+
+  <rect x="195" y="205" width="175" height="36" rx="14 14 4 14" fill="#8B5CF6" />
+   <text x="207" y="227" font-size="12" fill="#fff" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Oui ! Incroyable ce twist 🔥</text>
+  <text x="187" y="253" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">10:35  ✓✓</text>
+
+  <rect x="20" y="276" width="190" height="36" rx="14 14 14 4" fill="#FFFFFF" />
+   <text x="32" y="298" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Le combat était dingue aussi</text>
+  <text x="218" y="324" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">10:37</text>
+
+  <!-- Séparateur date aujourd'hui -->
+  <rect x="80" y="345" width="80" height="1" rx="0" fill="#E5E7EB" />
+  <text x="195" y="342" font-size="11" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Aujourd'hui</text>
+  <rect x="230" y="345" width="80" height="1" rx="0" fill="#E5E7EB" />
+
+  <rect x="165" y="360" width="205" height="36" rx="14 14 4 14" fill="#8B5CF6" />
+   <text x="177" y="382" font-size="12" fill="#fff" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Tu recommandes quoi ensuite ?</text>
+  <text x="157" y="408" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">15:20  ✓</text>
+
+  <rect x="20" y="428" width="185" height="36" rx="14 14 14 4" fill="#FFFFFF" />
+   <text x="32" y="450" font-size="12" fill="#111827" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Vinland Saga absolument !</text>
+  <text x="213" y="476" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">15:22</text>
+
+  <rect x="150" y="495" width="220" height="36" rx="14 14 4 14" fill="#8B5CF6" />
+   <text x="162" y="517" font-size="12" fill="#fff" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">C'est dans ma liste depuis longtemp</text>
+  <text x="142" y="543" font-size="10" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">15:23  ✓✓</text>
+
+  <!-- Indicateur frappe -->
+  <rect x="20" y="565" width="70" height="30" rx="15" fill="#FFFFFF" />
+  <circle cx="34" cy="580" r="4" fill="#9CA3AF"/>
+  <circle cx="45" cy="580" r="4" fill="#9CA3AF"/>
+  <circle cx="56" cy="580" r="4" fill="#9CA3AF"/>
+
+  <!-- Input -->
+  <rect x="0" y="700" width="390" height="64" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="700" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <rect x="16" y="712" width="310" height="40" rx="20" fill="#F3F4F6" />
+  <text x="30" y="736" font-size="13" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Écrire un message...</text>
+  <rect x="334" y="712" width="40" height="40" rx="20" fill="#8B5CF6" />
+  <g color="white"><path d="M356,728 L344,724 L347,728 L344,732 Z" fill="currentColor"/><line x1="347" y1="728" x2="356" y2="728" stroke="currentColor" stroke-width="1.5"/></g>
+
+  <g color="#9CA3AF">
+      <path d="M31,784 L39,776 L47,784 V792 H42 V787 H36 V792 H31 Z" fill="currentColor"/>
+      <text x="39" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Accueil</text>
+    </g><g color="#9CA3AF">
+      <circle cx="116" cy="783" r="5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="120" y1="787" x2="124" y2="791" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <text x="117" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Recherche</text>
+    </g><g color="#9CA3AF">
+      <rect x="188" y="776" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="192" y1="781" x2="198" y2="781" stroke="currentColor" stroke-width="1.5"/><line x1="192" y1="784" x2="198" y2="784" stroke="currentColor" stroke-width="1.5"/><line x1="192" y1="787" x2="196" y2="787" stroke="currentColor" stroke-width="1.5"/>
+      <text x="195" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Biblio</text>
+    </g><g color="#8B5CF6">
+      <path d="M266,778 Q266,776 268,776 H278 Q280,776 280,778 V785 Q280,787 278,787 H271 L267,791 V787 H268 Q266,787 266,785 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="273" y="798" font-size="9" fill="#8B5CF6" font-weight="600" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Messages</text>
+    </g><g color="#9CA3AF">
+      <circle cx="351" cy="781" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M344,792 Q344,787 351,787 Q358,787 358,792" fill="none" stroke="currentColor" stroke-width="2"/>
+      <text x="351" y="798" font-size="9" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Profil</text>
+    </g>
+
+  <!-- Barre de navigation -->
+  <rect x="0" y="764" width="390" height="80" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="764" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <!-- Indicateur home -->
+  <rect x="135" y="836" width="120" height="4" rx="2" fill="#000" />
+</svg>

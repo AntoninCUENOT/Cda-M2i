@@ -1,0 +1,223 @@
+@startuml Architecture Détaillée - Couches
+
+title Architecture Détaillée en Couches - AnimeTracker
+
+skinparam componentStyle rectangle
+skinparam linetype ortho
+
+' ============================
+' COUCHE PRÉSENTATION (Mobile)
+' ============================
+
+package "Couche Présentation - React Native Expo" {
+
+  package "Screens (Pages)" {
+    component [AuthScreen\n(Login/Register)] as auth_screen
+    component [HomeScreen\n(Feed)] as home_screen
+    component [AnimeListScreen\n(Bibliothèque)] as anime_list_screen
+    component [AnimeDetailScreen\n(Fiche anime)] as anime_detail_screen
+    component [ProfileScreen\n(Profil user)] as profile_screen
+    component [GroupScreen\n(Discussion)] as group_screen
+    component [ConversationScreen\n(Messagerie)] as conversation_screen
+  }
+
+  package "Components" {
+    component [AnimeCard] as anime_card
+    component [ReviewCard] as review_card
+    component [MessageBubble] as message_bubble
+    component [NotificationBadge] as notif_badge
+  }
+
+  package "State Management" {
+    component [Redux Store\n/ Context API] as redux
+    component [Slices:\n- auth\n- animes\n- notifications] as slices
+  }
+
+  package "Services Client" {
+    component [API Client\n(Axios)] as api_client
+    component [Auth Service\n(JWT Storage)] as auth_service
+    component [Push Notification\nHandler] as push_handler
+  }
+}
+
+' ============================
+' COUCHE API (Backend)
+' ============================
+
+package "Couche API - Node.js Express" {
+
+  package "Routes & Controllers" {
+    component [AuthController\nPOST /auth/login\nPOST /auth/register] as auth_ctrl
+    component [UsersController\nGET /users/:id\nPUT /users/me] as users_ctrl
+    component [AnimesController\nGET /animes\nGET /animes/:id] as animes_ctrl
+    component [ReviewsController\nPOST /reviews\nDELETE /reviews/:id] as reviews_ctrl
+    component [GroupsController\nPOST /groups\nGET /groups/:id] as groups_ctrl
+    component [ConversationsController\nGET /conversations\nPOST /messages] as conv_ctrl
+    component [NotificationsController\nGET /notifications] as notif_ctrl
+  }
+
+  package "Middlewares" {
+    component [authMiddleware\nVérifie JWT] as auth_mw
+    component [validationMiddleware\nValide données] as valid_mw
+    component [errorHandler\nGestion erreurs] as error_mw
+    component [rateLimiter\nLimite requêtes] as rate_mw
+  }
+
+  package "Services Métier" {
+    component [AuthService\nlogin(), register(),\nverifyToken()] as auth_srv
+    component [AnimeService\nsearchAnimes(),\ngetAnimeDetails(),\nsyncWithJikan()] as anime_srv
+    component [ReviewService\ncreateReview(),\nlikeReview()] as review_srv
+    component [NotificationService\nsendNotification(),\nsendPush()] as notif_srv
+    component [GroupService\ncreateGroup(),\naddMember()] as group_srv
+  }
+
+  package "Repositories (Data Access)" {
+    component [UserRepository] as user_repo
+    component [AnimeRepository] as anime_repo
+    component [ReviewRepository] as review_repo
+    component [NotificationRepository] as notif_repo
+  }
+}
+
+' ============================
+' COUCHE DONNÉES
+' ============================
+
+package "Couche Données" {
+
+  database "PostgreSQL" {
+    component [Tables:\nuser, anime, review,\nuser_anime, follow,\nconversation, message,\ngroup, notification...] as tables
+  }
+
+  package "ORM - Sequelize" {
+    component [User Model] as user_model
+    component [Anime Model] as anime_model
+    component [Review Model] as review_model
+    component [Group Model] as group_model
+    component [Message Model] as message_model
+  }
+}
+
+' ============================
+' SERVICES EXTERNES
+' ============================
+
+cloud "Jikan API" as jikan_api
+cloud "Expo Push\nNotifications" as expo_push_api
+cloud "CDN\n(Images)" as cdn_api
+
+' ============================
+' TÂCHES PLANIFIÉES
+' ============================
+
+component [Cron Jobs\n(node-cron)] as cron {
+  component [checkNewEpisodes()\nQuotidien 8h] as cron_episodes
+  component [cleanOldNotifications()\nHebdomadaire] as cron_clean
+}
+
+' ============================
+' FLUX DE DONNÉES
+' ============================
+
+' Présentation -> API
+auth_screen --> api_client
+anime_list_screen --> api_client
+anime_detail_screen --> api_client
+profile_screen --> api_client
+group_screen --> api_client
+conversation_screen --> api_client
+
+api_client --> auth_service
+api_client --> redux
+
+' API Client -> Controllers
+api_client --> auth_ctrl : HTTPS
+api_client --> users_ctrl : HTTPS
+api_client --> animes_ctrl : HTTPS
+api_client --> reviews_ctrl : HTTPS
+api_client --> groups_ctrl : HTTPS
+api_client --> conv_ctrl : HTTPS
+api_client --> notif_ctrl : HTTPS
+
+' Middlewares
+auth_ctrl --> auth_mw
+users_ctrl --> auth_mw
+animes_ctrl --> auth_mw
+reviews_ctrl --> auth_mw
+groups_ctrl --> auth_mw
+
+auth_ctrl --> valid_mw
+reviews_ctrl --> valid_mw
+
+' Controllers -> Services
+auth_ctrl --> auth_srv
+users_ctrl --> auth_srv
+animes_ctrl --> anime_srv
+reviews_ctrl --> review_srv
+groups_ctrl --> group_srv
+conv_ctrl --> notif_srv
+notif_ctrl --> notif_srv
+
+' Services -> Repositories
+auth_srv --> user_repo
+anime_srv --> anime_repo
+review_srv --> review_repo
+notif_srv --> notif_repo
+
+' Repositories -> ORM -> DB
+user_repo --> user_model
+anime_repo --> anime_model
+review_repo --> review_model
+
+user_model --> tables
+anime_model --> tables
+review_model --> tables
+group_model --> tables
+message_model --> tables
+
+' Services -> Externes
+anime_srv --> jikan_api : REST API
+notif_srv --> expo_push_api : Push
+api_client --> cdn_api : Upload images
+
+' Cron Jobs
+cron_episodes --> anime_srv
+cron_episodes --> notif_srv
+cron_clean --> notif_repo
+
+' Push Notifications
+expo_push_api --> push_handler
+push_handler --> redux
+
+' Notes
+note right of auth_mw
+  Vérifie token JWT
+  Extrait id_user
+  Vérifie rôle (user/modo/admin)
+  Bloque si non autorisé
+end note
+
+note right of anime_srv
+  Cache intelligent:
+  - Vérifie si anime en BDD
+  - Si absent ou ancien, fetch Jikan
+  - Sauvegarde en BDD
+  - Retourne données
+end note
+
+note right of notif_srv
+  Vérifie préférences user
+  Crée notification en BDD
+  Envoie push via Expo
+  Gère token push invalides
+end note
+
+note right of cron_episodes
+  **Processus quotidien:**
+  1. Liste animes "Currently Airing"
+  2. Fetch Jikan pour chaque
+  3. Compare nb épisodes
+  4. Si nouveau: notifie users
+end note
+
+@enduml

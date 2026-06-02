@@ -1,0 +1,80 @@
+@startuml Diagramme de classes Social - AnimeTracker
+
+' Configuration du style
+skinparam classAttributeIconSize 0
+
+title Diagramme de Classes - Fonctionnalités Sociales
+
+' ============================
+' CLASSES
+' ============================
+
+class User {
+  - id: UUID
+  - email: String
+  - pseudo: String
+  - photo: String
+  --
+  + follow(): void
+  + unfollow(): void
+}
+
+class Follow {
+  - id: UUID
+  - followerId: UUID
+  - followingId: UUID
+  - createdAt: DateTime
+}
+
+class Conversation {
+  - id: UUID
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + getParticipants(): User[]
+  + getLastMessage(): Message
+}
+
+class ConversationParticipant {
+  - id: UUID
+  - conversationId: UUID
+  - userId: UUID
+  - joinedAt: DateTime
+}
+
+class Message {
+  - id: UUID
+  - conversationId: UUID
+  - senderId: UUID
+  - content: String
+  - isRead: Boolean
+  - createdAt: DateTime
+  --
+  + send(): void
+  + markAsRead(): void
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+User "1" -- "0..*" Follow : follower >
+User "1" -- "0..*" Follow : following >
+User "1" -- "0..*" ConversationParticipant : participe >
+User "1" -- "0..*" Message : envoie >
+
+Conversation "1" -- "2..*" ConversationParticipant : a >
+Conversation "1" -- "0..*" Message : contient >
+
+note right of Follow
+  Un utilisateur ne peut pas
+  se suivre lui-même
+  Pas de doublon possible
+end note
+
+note right of Conversation
+  Minimum 2 participants
+  Conversation privée 1-to-1
+end note
+
+@enduml

@@ -1,0 +1,237 @@
+@startuml Diagramme de séquence - Système de Notifications
+
+title Scénario : Système de notifications (Follow, Épisode, Message)
+
+actor "Utilisateur A" as userA
+participant "Application\nMobile A" as appA
+participant "API\nBackend" as api
+participant "Service\nNotifications" as notif
+participant "Jikan API" as jikan
+participant "Scheduler\n(Cron Job)" as cron
+database "Base de\nDonnées" as db
+participant "Application\nMobile B" as appB
+actor "Utilisateur B" as userB
+
+== Notification : Nouveau Follower ==
+
+userA -> appA : Clique "Suivre"\nsur profil de UserB
+activate appA
+
+appA -> api : POST /users/{userB_id}/follow
+activate api
+
+api -> db : INSERT INTO follow\n(id_follower=userA_id,\nid_following=userB_id)
+activate db
+db --> api : Follow créé
+deactivate db
+
+api -> notif : Créer notification follower
+activate notif
+
+' Vérifie préférences de UserB
+notif -> db : SELECT new_follower\nFROM notification_preferences\nWHERE id_user = userB_id
+activate db
+db --> notif : new_follower = true
+deactivate db
+
+alt Notifications followers activées
+    notif -> db : INSERT INTO notification\n(id_user=userB_id,\ntype='NOUVEAU_FOLLOWER',\ntitle="UserA vous suit",\nmessage="UserA a commencé à vous suivre",\nrelated_entity_id=userA_id)
+    activate db
+    db --> notif : Notification créée
+    deactivate db
+
+    notif -> appB : Push notification\n(Firebase/Expo)
+    activate appB
+    appB --> userB : Notification reçue\n"UserA vous suit"
+    deactivate appB
+
+    notif --> api : OK
+    deactivate notif
+end
+
+api --> appA : 201 Created
+deactivate api
+
+appA --> userA : "Vous suivez maintenant UserB"
+deactivate appA
+
+userB -> appB : Ouvre notification
+activate appB
+
+appB -> api : GET /notifications
+activate api
+
+api -> db : SELECT * FROM notification\nWHERE id_user = userB_id\nORDER BY created_at DESC
+activate db
+db --> api : Liste notifications
+deactivate db
+
+api --> appB : 200 OK\n[{notifications}]
+deactivate api
+
+appB --> userB : Affiche liste notifications\navec badge nombre non-lus
+deactivate appB
+
+userB -> appB : Clique sur notification\n"UserA vous suit"
+activate appB
+
+appB -> api : PUT /notifications/{notif_id}/read
+activate api
+
+api -> db : UPDATE notification\nSET is_read = true\nWHERE id_notification = ?
+activate db
+db --> api : OK
+deactivate db
+
+api --> appB : 200 OK
+deactivate api
+
+appB -> appB : Retire badge notification
+
+appB -> api : GET /users/{userA_id}
+activate api
+api -> db : SELECT * FROM user
+activate db
+db --> api : Profil UserA
+deactivate db
+api --> appB : 200 OK
+deactivate api
+
+appB --> userB : Redirige vers profil de UserA
+deactivate appB
+
+== Notification : Nouvel Épisode ==
+
+note over cron, jikan
+  Tâche planifiée exécutée
+  quotidiennement (ex: 8h00)
+end note
+
+cron -> api : Vérifie nouveaux épisodes
+activate cron
+activate api
+
+' Récupère les animes actuellement en diffusion
+api -> db : SELECT DISTINCT a.id_anime\nFROM anime a\nJOIN user_anime ua ON a.id_anime = ua.id_anime\nWHERE a.status = 'Currently Airing'\nAND ua.status IN ('EN_COURS', 'A_VOIR')
+activate db
+db --> api : Liste id_anime en diffusion
+deactivate db
+
+loop Pour chaque anime en diffusion
+    api -> jikan : GET /anime/{id_anime}
+    activate jikan
+    jikan --> api : Données anime actualisées\n(episodes: 1050)
+    deactivate jikan
+
+    api -> db : SELECT episodes FROM anime\nWHERE id_anime = ?
+    activate db
+    db --> api : Ancienne valeur (episodes: 1049)
+    deactivate db
+
+    alt Nouvel épisode détecté (1050 > 1049)
+        api -> db : UPDATE anime\nSET episodes = 1050,\nlast_fetched_at = NOW()
+        activate db
+        db --> api : OK
+        deactivate db
+
+        ' Récupère les utilisateurs suivant cet anime
+        api -> db : SELECT DISTINCT ua.id_user\nFROM user_anime ua\nJOIN notification_preferences np\n  ON ua.id_user = np.id_user\nWHERE ua.id_anime = ?\nAND ua.status IN ('EN_COURS', 'A_VOIR')\nAND np.new_episode = true
+        activate db
+        db --> api : Liste utilisateurs à notifier
+        deactivate db
+
+        loop Pour chaque utilisateur concerné
+            api -> db : INSERT INTO notification\n(id_user, type='NOUVEL_EPISODE',\ntitle="Nouvel épisode de One Piece",\nmessage="Épisode 1050 disponible !",\nrelated_entity_id=id_anime)
+            activate db
+            db --> api : Notification créée
+            deactivate db
+
+            api -> notif : Envoyer push notification
+            activate notif
+            notif -> appA : Push notification
+            activate appA
+            appA --> userA : Notification\n"Nouvel épisode de One Piece !"
+            deactivate appA
+            deactivate notif
+        end
+    end
+end
+
+api --> cron : Vérification terminée
+deactivate api
+deactivate cron
+
+userA -> appA : Ouvre notification\népisode
+activate appA
+
+appA -> api : GET /notifications/{notif_id}
+activate api
+
+api -> db : SELECT related_entity_id\nFROM notification\nWHERE id_notification = ?
+activate db
+db --> api : id_anime = 21
+deactivate db
+
+api -> db : UPDATE notification\nSET is_read = true
+activate db
+db --> api : OK
+deactivate db
+
+api --> appA : 200 OK\n{notification avec id_anime}
+deactivate api
+
+appA -> api : GET /animes/21
+activate api
+api -> db : SELECT * FROM anime WHERE id_anime = 21
+activate db
+db --> api : Données anime
+deactivate db
+api --> appA : 200 OK
+deactivate api
+
+appA --> userA : Redirige vers fiche anime\nOne Piece (avec épisode 1050)
+deactivate appA
+
+== Configuration des préférences ==
+
+userA -> appA : Ouvre Paramètres > Notifications
+activate appA
+
+appA -> api : GET /users/me/notification-preferences
+activate api
+
+api -> db : SELECT * FROM notification_preferences\nWHERE id_user = ?
+activate db
+db --> api : Préférences actuelles
+deactivate db
+
+api --> appA : 200 OK\n{preferences}
+deactivate api
+
+appA --> userA : Affiche toggles:\n✓ Nouveaux followers\n✓ Nouveaux épisodes\n✓ Messages privés\n✗ Réponses groupes
+deactivate appA
+
+userA -> appA : Désactive\n"Réponses groupes"
+activate appA
+
+appA -> api : PUT /users/me/notification-preferences\n{group_reply: false}
+activate api
+
+api -> db : UPDATE notification_preferences\nSET group_reply = false,\nupdated_at = NOW()\nWHERE id_user = ?
+activate db
+db --> api : Préférences mises à jour
+deactivate db
+
+api --> appA : 200 OK
+deactivate api
+
+appA --> userA : "Préférences sauvegardées"
+deactivate appA
+
+note over userA, appA
+  L'utilisateur ne recevra plus
+  de notifications pour les messages
+  dans les groupes
+end note
+
+@enduml

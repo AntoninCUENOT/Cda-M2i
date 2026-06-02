@@ -1,0 +1,94 @@
+@startuml Diagramme de classes Groupes - AnimeTracker
+
+' Configuration du style
+skinparam classAttributeIconSize 0
+
+title Diagramme de Classes - Groupes de Discussion
+
+' ============================
+' ENUMERATIONS
+' ============================
+
+enum GroupType {
+  OFFICIEL
+  PERSONNALISE
+}
+
+' ============================
+' CLASSES
+' ============================
+
+class User {
+  - id: UUID
+  - pseudo: String
+}
+
+class Anime {
+  - id: Integer
+  - title: String
+}
+
+class Group {
+  - id: UUID
+  - name: String
+  - description: String
+  - type: GroupType
+  - animeId: Integer (nullable)
+  - creatorId: UUID
+  - isPublic: Boolean
+  - createdAt: DateTime
+  --
+  + create(): void
+  + delete(): void
+  + addMember(): void
+  + addModerator(): void
+}
+
+class GroupMember {
+  - id: UUID
+  - groupId: UUID
+  - userId: UUID
+  - isModerator: Boolean
+  - joinedAt: DateTime
+}
+
+class GroupMessage {
+  - id: UUID
+  - groupId: UUID
+  - authorId: UUID
+  - content: String
+  - createdAt: DateTime
+  - deletedAt: DateTime
+  - deletedBy: UUID
+  --
+  + post(): void
+  + delete(): void
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+User "1" -- "0..*" Group : crée >
+User "1" -- "0..*" GroupMember : membre >
+User "1" -- "0..*" GroupMessage : poste >
+
+Anime "1" -- "0..1" Group : groupe officiel >
+
+Group "1" -- "0..*" GroupMember : a >
+Group "1" -- "0..*" GroupMessage : contient >
+Group -- GroupType
+
+note right of Group
+  Type OFFICIEL: auto-créé par anime
+  Type PERSONNALISE: créé par user/modo
+  Les groupes officiels ne peuvent
+  pas être supprimés
+end note
+
+note right of GroupMember
+  Le créateur est toujours
+  membre et modérateur
+end note
+
+@enduml

@@ -1,0 +1,172 @@
+@startuml Architecture Globale - AnimeTracker
+
+!define RECTANGLE class
+
+title Architecture Globale - AnimeTracker
+
+skinparam componentStyle rectangle
+
+' ============================
+' COUCHE CLIENT (Mobile)
+' ============================
+
+package "Client Mobile" <<Device>> {
+  component [React Native\nExpo] as mobile {
+    component [Navigation\n(React Navigation)] as nav
+    component [State Management\n(Redux / Context)] as state
+    component [UI Components\n(NativeBase / Styled)] as ui
+    component [Storage Local\n(AsyncStorage)] as storage
+  }
+}
+
+' ============================
+' SERVICES EXTERNES CLIENT
+' ============================
+
+cloud "Services Push" {
+  component [Expo\nPush Notifications] as expo_push
+}
+
+' ============================
+' COUCHE API / BACKEND
+' ============================
+
+package "API Backend" <<Node>> {
+  component [API REST\nNode.js + Express] as api {
+    component [Routes\n& Controllers] as routes
+    component [Middlewares\n(Auth, Validation)] as middleware
+    component [Services\nBusiness Logic] as services
+    component [Models\n(Sequelize ORM)] as models
+  }
+
+  component [Authentification\nJWT] as auth
+  component [Validation\n(Joi / Zod)] as validation
+}
+
+' ============================
+' SERVICES BACKEND
+' ============================
+
+package "Services Backend" {
+  component [Service\nNotifications] as notif_service {
+    note right
+      Gestion des notifications
+      Push via Expo
+      Stockage en BDD
+    end note
+  }
+
+  component [Scheduler\n(node-cron)] as scheduler {
+    note right
+      Tâches planifiées:
+      - Vérification nouveaux épisodes
+      - Nettoyage cache
+      - Envoi emails (optionnel)
+    end note
+  }
+}
+
+' ============================
+' BASE DE DONNÉES
+' ============================
+
+database "PostgreSQL" as db {
+  component [18 Tables] as tables
+  component [Triggers\n& Contraintes] as triggers
+  component [Index\nPerformance] as indexes
+}
+
+' ============================
+' SERVICES EXTERNES
+' ============================
+
+cloud "Services Externes" {
+  component [Jikan API v4\n(MyAnimeList)] as jikan {
+    note right
+      API REST gratuite
+      Données animes
+      Catalogue complet
+    end note
+  }
+
+  component [CDN\n(Cloudinary / AWS S3)] as cdn {
+    note right
+      Stockage images:
+      - Photos de profil
+      - Assets application
+    end note
+  }
+}
+
+' ============================
+' INFRASTRUCTURE (Optionnel)
+' ============================
+
+node "Serveur de Production" {
+  component [Reverse Proxy\nNginx] as nginx
+  component [Process Manager\nPM2] as pm2
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+' Client -> Backend
+mobile --> nginx : HTTPS
+nginx --> api : Proxy
+
+mobile --> expo_push : Receive Push
+
+' Backend -> Services
+api --> auth : Utilise
+api --> validation : Utilise
+api --> notif_service : Appelle
+api --> scheduler : Utilise
+
+' Backend -> BDD
+api --> db : SQL Queries\n(Sequelize)
+models --> db
+
+' Backend -> Externes
+api --> jikan : GET /anime\nREST API
+mobile --> cdn : Upload/Download\nImages
+
+notif_service --> expo_push : Send Push
+
+scheduler --> jikan : Vérifie épisodes\n(quotidien)
+scheduler --> db : Lecture/Écriture
+
+' Storage
+mobile --> storage : Token JWT\nDonnées cache
+
+' Notes architecturales
+note right of mobile
+  **Technologies:**
+  - React Native (Expo)
+  - TypeScript
+  - Redux Toolkit / Context API
+  - React Navigation
+  - Axios (HTTP client)
+  - Expo SecureStore (tokens)
+end note
+
+note right of api
+  **Technologies:**
+  - Node.js 18+
+  - Express.js
+  - TypeScript
+  - JWT (jsonwebtoken)
+  - bcrypt (hash passwords)
+  - Sequelize ORM
+end note
+
+note right of db
+  **PostgreSQL 15+**
+  - 18 tables relationnelles
+  - Types ENUM
+  - Triggers automatiques
+  - Index de performance
+  - Contraintes d'intégrité
+end note
+
+@enduml

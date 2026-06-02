@@ -1,0 +1,35 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement réelles (jamais commitées)
+.env
+AnimeTracker/.env
+AnimeTracker/backend/.env
+
+# Garder le template
+!.env.dev
+!AnimeTracker/.env.dev
+
+# Build TypeScript
+dist/
+build/
+
+# Expo
+.expo/
+AnimeTracker/.expo/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Fichiers générés par sharp/docx (reproductibles)
+scripts-docx/mockups/*.png
+scripts-docx/diagrams/*.png

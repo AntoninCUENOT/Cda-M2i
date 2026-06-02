@@ -1,0 +1,215 @@
+@startuml Diagramme de séquence - Messagerie Privée
+
+title Scénario : Envoyer un message privé
+
+actor "Utilisateur A" as userA
+participant "Application\nMobile A" as appA
+participant "API\nBackend" as api
+participant "Service\nNotifications" as notif
+database "Base de\nDonnées" as db
+participant "Application\nMobile B" as appB
+actor "Utilisateur B" as userB
+
+== Recherche d'un utilisateur ==
+
+userA -> appA : Recherche utilisateur\n"JohnDoe"
+activate appA
+
+appA -> api : GET /users/search?q=JohnDoe
+activate api
+
+api -> db : SELECT id_user, pseudo, photo\nFROM user\nWHERE pseudo ILIKE '%JohnDoe%'\nLIMIT 10
+activate db
+db --> api : Liste utilisateurs
+deactivate db
+
+api --> appA : 200 OK\n[{users}]
+deactivate api
+
+appA --> userA : Affiche résultats
+deactivate appA
+
+== Démarrer une conversation ==
+
+userA -> appA : Clique sur profil\nde "JohnDoe" (user_id: def456)
+activate appA
+
+appA -> api : GET /conversations/with/def456
+activate api
+
+api -> api : Vérifie JWT\n(id_user de A: abc123)
+
+api -> db : SELECT c.* FROM conversation c\nJOIN conversation_participant cp1 ON c.id_conversation = cp1.id_conversation\nJOIN conversation_participant cp2 ON c.id_conversation = cp2.id_conversation\nWHERE cp1.id_user = 'abc123'\nAND cp2.id_user = 'def456'
+activate db
+
+alt Conversation existante
+    db --> api : Conversation trouvée\n(id: conv789)
+    deactivate db
+
+    api -> db : SELECT * FROM message\nWHERE id_conversation = 'conv789'\nORDER BY created_at DESC LIMIT 50
+    activate db
+    db --> api : Messages existants
+    deactivate db
+
+    api --> appA : 200 OK\n{conversation, messages}
+    deactivate api
+
+    appA --> userA : Affiche conversation existante
+
+else Aucune conversation
+    db --> api : NULL
+    deactivate db
+
+    api --> appA : 404 Not Found
+    deactivate api
+
+    appA --> userA : Affiche interface\nnouvelle conversation
+end
+
+deactivate appA
+
+== Envoi d'un message ==
+
+userA -> appA : Écrit message:\n"Salut ! Tu as vu le dernier épisode ?"
+activate appA
+
+appA -> appA : Valide:\n- Contenu non vide\n- Max 1000 caractères
+
+appA -> api : POST /conversations\n{recipient_id: "def456",\ncontent: "Salut ! Tu as..."}
+activate api
+
+api -> api : Vérifie JWT (sender: abc123)
+
+alt Conversation n'existe pas encore
+    api -> db : INSERT INTO conversation\n()
+    activate db
+    db --> api : Conversation créée\n(id: conv789)
+    deactivate db
+
+    api -> db : INSERT INTO conversation_participant\n(id_conversation='conv789', id_user='abc123')
+    activate db
+    db --> api : Participant A ajouté
+    deactivate db
+
+    api -> db : INSERT INTO conversation_participant\n(id_conversation='conv789', id_user='def456')
+    activate db
+    db --> api : Participant B ajouté
+    deactivate db
+end
+
+api -> db : INSERT INTO message\n(id_conversation='conv789',\nid_sender='abc123',\ncontent="Salut ! Tu as...",\nis_read=false)
+activate db
+db --> api : Message créé\n(id: msg001)
+deactivate db
+
+api -> db : UPDATE conversation\nSET updated_at = NOW()\nWHERE id_conversation = 'conv789'
+activate db
+db --> api : OK
+deactivate db
+
+api --> appA : 201 Created\n{message détails}
+
+' Envoi notification à l'utilisateur B
+api -> notif : Envoyer notification\nà user_id='def456'
+activate notif
+
+notif -> db : SELECT * FROM notification_preferences\nWHERE id_user = 'def456'
+activate db
+db --> notif : Préférences\n(new_message: true)
+deactivate db
+
+alt Notifications messages activées
+    notif -> db : INSERT INTO notification\n(id_user='def456',\ntype='NOUVEAU_MESSAGE',\ntitle="Nouveau message de UserA",\nmessage="Salut ! Tu as...",\nrelated_entity_id='conv789')
+    activate db
+    db --> notif : Notification créée
+    deactivate db
+
+    notif -> appB : Push notification\n(via Firebase/Expo)
+    activate appB
+    appB --> userB : Notification reçue\n"Nouveau message de UserA"
+    deactivate appB
+end
+
+deactivate notif
+deactivate api
+
+appA -> appA : Ajoute message à l'UI\n(aligné à droite, status "envoyé")
+
+appA --> userA : Message affiché
+deactivate appA
+
+== Réception et lecture ==
+
+userB -> appB : Ouvre notification
+activate appB
+
+appB -> api : GET /conversations/conv789/messages
+activate api
+
+api -> api : Vérifie JWT (user B)
+
+api -> db : SELECT m.*, u.pseudo, u.photo\nFROM message m\nJOIN user u ON m.id_sender = u.id_user\nWHERE m.id_conversation = 'conv789'\nORDER BY created_at ASC
+activate db
+db --> api : Messages de la conversation
+deactivate db
+
+api --> appB : 200 OK\n[{messages}]
+deactivate api
+
+appB --> userB : Affiche conversation\navec message de A
+deactivate appB
+
+userB -> appB : Messages visibles à l'écran
+activate appB
+
+appB -> api : PUT /messages/msg001/read
+activate api
+
+api -> api : Vérifie JWT (user B)
+
+api -> db : UPDATE message\nSET is_read = true\nWHERE id_message = 'msg001'\nAND id_sender != 'def456'
+activate db
+db --> api : Message marqué lu
+deactivate db
+
+api --> appB : 200 OK
+deactivate api
+
+appB -> appB : Met à jour UI\n(retire badge non-lu)
+
+deactivate appB
+
+== Réponse ==
+
+userB -> appB : Écrit réponse:\n"Oui ! C'était incroyable !"
+activate appB
+
+appB -> api : POST /conversations/conv789/messages\n{content: "Oui ! C'était..."}
+activate api
+
+api -> db : INSERT INTO message\n(id_conversation='conv789',\nid_sender='def456',\ncontent="Oui ! C'était...",\nis_read=false)
+activate db
+db --> api : Message créé
+deactivate db
+
+api --> appB : 201 Created
+deactivate api
+
+appB --> userB : Message affiché
+deactivate appB
+
+' Notification vers A (en temps réel si connecté)
+api -> notif : Notification vers user A
+activate notif
+
+notif -> appA : WebSocket / Push notification
+activate appA
+
+appA -> appA : Nouveau message reçu\nMet à jour l'UI en temps réel
+
+appA --> userA : Message de B s'affiche
+deactivate appA
+
+deactivate notif
+
+@enduml

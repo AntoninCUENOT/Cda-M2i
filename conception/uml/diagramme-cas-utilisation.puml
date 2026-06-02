@@ -1,0 +1,162 @@
+@startuml Diagramme de cas d'utilisation - AnimeTracker
+
+left to right direction
+skinparam packageStyle rectangle
+
+' Définition des acteurs
+actor "Visiteur" as visiteur
+actor "Utilisateur" as user
+actor "Modérateur" as modo
+actor "Administrateur" as admin
+actor "Jikan API" as api
+
+' Héritage des acteurs
+visiteur <|-- user
+user <|-- modo
+modo <|-- admin
+
+' Package Authentification & Profil
+package "Authentification & Profil" {
+  usecase "S'inscrire" as UC01
+  usecase "Se connecter" as UC02
+  usecase "Se déconnecter" as UC03
+  usecase "Modifier son profil" as UC04
+  usecase "Supprimer son compte" as UC05
+  usecase "Consulter un profil utilisateur" as UC06
+}
+
+' Package Catalogue & Découverte
+package "Catalogue & Découverte" {
+  usecase "Rechercher un anime" as UC07
+  usecase "Filtrer les animes" as UC08
+  usecase "Consulter fiche anime" as UC09
+  usecase "Voir reviews publiques" as UC10
+}
+
+' Package Ma Bibliothèque
+package "Ma Bibliothèque" {
+  usecase "Gérer ma liste d'animes" as UC11
+  usecase "Suivre ma progression" as UC12
+  usecase "Consulter mes statistiques" as UC13
+  usecase "Ajouter à 'À voir'" as UC11a
+  usecase "Marquer 'En cours'" as UC11b
+  usecase "Marquer 'Terminé'" as UC11c
+  usecase "Marquer 'Abandonné'" as UC11d
+}
+
+' Package Notes & Commentaires
+package "Notes & Commentaires" {
+  usecase "Noter un anime" as UC14
+  usecase "Écrire un commentaire" as UC15
+  usecase "Définir visibilité commentaire" as UC16
+  usecase "Modifier/Supprimer commentaire" as UC17
+  usecase "Liker une review" as UC18
+}
+
+' Package Interactions Sociales
+package "Interactions Sociales" {
+  usecase "Suivre un utilisateur" as UC19
+  usecase "Ne plus suivre" as UC20
+  usecase "Voir abonnements/abonnés" as UC21
+  usecase "Envoyer message privé" as UC22
+  usecase "Lire messages privés" as UC23
+  usecase "Supprimer conversation" as UC24
+}
+
+' Package Groupes de Discussion
+package "Groupes de Discussion" {
+  usecase "Rejoindre groupe officiel" as UC25
+  usecase "Créer groupe personnalisé" as UC26
+  usecase "Gérer modérateurs groupe" as UC27
+  usecase "Publier message groupe" as UC28
+  usecase "Lire messages groupe" as UC29
+  usecase "Quitter groupe" as UC30
+  usecase "Supprimer groupe personnalisé" as UC31
+  usecase "Modérer messages groupe" as UC32
+}
+
+' Package Notifications
+package "Notifications" {
+  usecase "Recevoir notifications" as UC33
+  usecase "Gérer préférences notifications" as UC34
+  usecase "Notifier nouveau follower" as UC33a
+  usecase "Notifier nouvel épisode" as UC33b
+  usecase "Notifier nouveau message" as UC33c
+}
+
+' Package Administration
+package "Administration & Modération" {
+  usecase "Signaler contenu inapproprié" as UC35
+  usecase "Consulter signalements" as UC36
+  usecase "Supprimer contenu" as UC37
+  usecase "Suspendre/Bannir utilisateur" as UC38
+}
+
+' Relations Visiteur
+visiteur --> UC07
+visiteur --> UC08
+visiteur --> UC09
+visiteur --> UC10
+
+' Relations Utilisateur
+user --> UC01
+user --> UC02
+user --> UC03
+user --> UC04
+user --> UC05
+user --> UC06
+user --> UC11
+user --> UC12
+user --> UC13
+user --> UC14
+user --> UC15
+user --> UC16
+user --> UC17
+user --> UC18
+user --> UC19
+user --> UC20
+user --> UC21
+user --> UC22
+user --> UC23
+user --> UC24
+user --> UC25
+user --> UC26
+user --> UC28
+user --> UC29
+user --> UC30
+user --> UC33
+user --> UC34
+user --> UC35
+
+' Relations Modérateur
+modo --> UC27
+modo --> UC31
+modo --> UC32
+
+' Relations Administrateur
+admin --> UC36
+admin --> UC37
+admin --> UC38
+
+' Relations include
+UC11 ..> UC11a : <<include>>
+UC11 ..> UC11b : <<include>>
+UC11 ..> UC11c : <<include>>
+UC11 ..> UC11d : <<include>>
+
+UC33 ..> UC33a : <<include>>
+UC33 ..> UC33b : <<include>>
+UC33 ..> UC33c : <<include>>
+
+UC15 ..> UC16 : <<include>>
+
+' Relations extend
+UC26 ..> UC27 : <<extend>>
+
+' Relations avec API externe
+UC07 --> api
+UC08 --> api
+UC09 --> api
+UC33b --> api
+
+@enduml

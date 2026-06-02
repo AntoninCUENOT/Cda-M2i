@@ -1,0 +1,388 @@
+@startuml Diagramme de classes - AnimeTracker
+
+' Configuration du style
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+' ============================
+' ENUMERATIONS
+' ============================
+
+enum AnimeStatus {
+  A_VOIR
+  EN_COURS
+  TERMINE
+  ABANDONNE
+}
+
+enum GroupType {
+  OFFICIEL
+  PERSONNALISE
+}
+
+enum NotificationType {
+  NOUVEAU_FOLLOWER
+  NOUVEL_EPISODE
+  NOUVEAU_MESSAGE
+  REPONSE_GROUPE
+}
+
+enum ReportStatus {
+  EN_ATTENTE
+  TRAITE
+  REJETE
+}
+
+enum UserRole {
+  USER
+  MODERATEUR
+  ADMIN
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVE
+}
+
+' ============================
+' CLASSE PRINCIPALE : USER
+' ============================
+
+class User {
+  - id: UUID
+  - email: String
+  - password: String (hashed)
+  - pseudo: String
+  - photo: String (URL)
+  - bio: String
+  - role: UserRole
+  - isActive: Boolean
+  - isSuspended: Boolean
+  - suspensionEndDate: DateTime
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + register(): void
+  + login(): String (token JWT)
+  + logout(): void
+  + updateProfile(): void
+  + deleteAccount(): void
+  + follow(user: User): void
+  + unfollow(user: User): void
+  + getStatistics(): UserStatistics
+}
+
+' ============================
+' ANIME
+' ============================
+
+class Anime {
+  - id: Integer (MAL ID)
+  - title: String
+  - titleEnglish: String
+  - synopsis: String
+  - imageUrl: String
+  - trailerUrl: String
+  - episodes: Integer
+  - score: Float
+  - year: Integer
+  - status: String
+  - airedFrom: Date
+  - airedTo: Date
+  - lastFetchedAt: DateTime
+  --
+  + fetchFromJikanAPI(): void
+  + updateFromAPI(): void
+  + getOfficialGroup(): Group
+}
+
+class Genre {
+  - id: Integer
+  - name: String
+  --
+}
+
+class Studio {
+  - id: Integer
+  - name: String
+  --
+}
+
+' ============================
+' RELATION USER-ANIME
+' ============================
+
+class UserAnime {
+  - id: UUID
+  - userId: UUID
+  - animeId: Integer
+  - status: AnimeStatus
+  - episodesWatched: Integer
+  - startedAt: DateTime
+  - completedAt: DateTime
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + updateStatus(status: AnimeStatus): void
+  + updateProgress(episodes: Integer): void
+  + getProgress(): Float
+}
+
+' ============================
+' REVIEWS (Notes & Commentaires)
+' ============================
+
+class Review {
+  - id: UUID
+  - userId: UUID
+  - animeId: Integer
+  - rating: Float
+  - comment: String
+  - visibility: Visibility
+  - likesCount: Integer
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + create(): void
+  + update(): void
+  + delete(): void
+  + toggleVisibility(): void
+  + addLike(user: User): void
+  + removeLike(user: User): void
+}
+
+class ReviewLike {
+  - id: UUID
+  - reviewId: UUID
+  - userId: UUID
+  - createdAt: DateTime
+  --
+}
+
+' ============================
+' INTERACTIONS SOCIALES
+' ============================
+
+class Follow {
+  - id: UUID
+  - followerId: UUID
+  - followingId: UUID
+  - createdAt: DateTime
+  --
+}
+
+class Conversation {
+  - id: UUID
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + getParticipants(): User[]
+  + getLastMessage(): Message
+}
+
+class ConversationParticipant {
+  - id: UUID
+  - conversationId: UUID
+  - userId: UUID
+  - joinedAt: DateTime
+  --
+}
+
+class Message {
+  - id: UUID
+  - conversationId: UUID
+  - senderId: UUID
+  - content: String
+  - isRead: Boolean
+  - createdAt: DateTime
+  --
+  + send(): void
+  + markAsRead(): void
+}
+
+' ============================
+' GROUPES DE DISCUSSION
+' ============================
+
+class Group {
+  - id: UUID
+  - name: String
+  - description: String
+  - type: GroupType
+  - animeId: Integer (nullable)
+  - creatorId: UUID
+  - isPublic: Boolean
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + create(): void
+  + delete(): void
+  + addMember(user: User): void
+  + removeMember(user: User): void
+  + addModerator(user: User): void
+  + removeModerator(user: User): void
+}
+
+class GroupMember {
+  - id: UUID
+  - groupId: UUID
+  - userId: UUID
+  - isModerator: Boolean
+  - joinedAt: DateTime
+  --
+}
+
+class GroupMessage {
+  - id: UUID
+  - groupId: UUID
+  - authorId: UUID
+  - content: String
+  - createdAt: DateTime
+  - deletedAt: DateTime
+  - deletedBy: UUID
+  --
+  + post(): void
+  + delete(moderator: User): void
+}
+
+' ============================
+' NOTIFICATIONS
+' ============================
+
+class Notification {
+  - id: UUID
+  - userId: UUID
+  - type: NotificationType
+  - title: String
+  - message: String
+  - relatedEntityId: UUID
+  - isRead: Boolean
+  - createdAt: DateTime
+  --
+  + send(): void
+  + markAsRead(): void
+}
+
+class NotificationPreferences {
+  - id: UUID
+  - userId: UUID
+  - newFollower: Boolean
+  - newEpisode: Boolean
+  - newMessage: Boolean
+  - groupReply: Boolean
+  - updatedAt: DateTime
+  --
+  + updatePreferences(): void
+}
+
+' ============================
+' MODERATION
+' ============================
+
+class Report {
+  - id: UUID
+  - reporterId: UUID
+  - reportedEntityType: String
+  - reportedEntityId: UUID
+  - reason: String
+  - description: String
+  - status: ReportStatus
+  - reviewedBy: UUID
+  - reviewedAt: DateTime
+  - createdAt: DateTime
+  --
+  + create(): void
+  + review(admin: User): void
+  + resolve(): void
+  + reject(): void
+}
+
+' ============================
+' STATISTIQUES
+' ============================
+
+class UserStatistics {
+  - totalAnimes: Integer
+  - animesWatched: Integer
+  - animesInProgress: Integer
+  - animesToWatch: Integer
+  - animesDropped: Integer
+  - totalEpisodes: Integer
+  - totalWatchTime: Integer (minutes)
+  - averageRating: Float
+  - favoriteGenres: Genre[]
+  --
+  + calculate(userId: UUID): UserStatistics
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+' User relations
+User "1" -- "0..*" UserAnime : possède >
+User "1" -- "0..*" Review : écrit >
+User "1" -- "0..*" ReviewLike : like >
+User "1" -- "0..*" Follow : suit/est suivi >
+User "1" -- "0..*" ConversationParticipant : participe >
+User "1" -- "0..*" Message : envoie >
+User "1" -- "0..*" Group : crée >
+User "1" -- "0..*" GroupMember : membre de >
+User "1" -- "0..*" GroupMessage : poste >
+User "1" -- "0..*" Notification : reçoit >
+User "1" -- "1" NotificationPreferences : configure >
+User "1" -- "0..*" Report : signale >
+
+' Anime relations
+Anime "1" -- "0..*" UserAnime : suivi par >
+Anime "1" -- "0..*" Review : évalué par >
+Anime "0..*" -- "0..*" Genre : appartient à >
+Anime "0..*" -- "0..1" Studio : produit par >
+Anime "1" -- "0..1" Group : groupe officiel >
+
+' Review relations
+Review "1" -- "0..*" ReviewLike : aimé par >
+
+' Conversation relations
+Conversation "1" -- "2..*" ConversationParticipant : participants >
+Conversation "1" -- "0..*" Message : contient >
+
+' Group relations
+Group "1" -- "0..*" GroupMember : membres >
+Group "1" -- "0..*" GroupMessage : messages >
+
+' Enums relations
+User -- UserRole
+UserAnime -- AnimeStatus
+Group -- GroupType
+Notification -- NotificationType
+Report -- ReportStatus
+Review -- Visibility
+
+' Notes explicatives
+note right of User
+  Le password est hashé avec bcrypt.
+  Le token JWT est généré à la connexion.
+  La suspension est temporaire, le ban est définitif.
+end note
+
+note right of Anime
+  Les données sont synchronisées
+  avec Jikan API v4.
+  Cache local pour performance.
+end note
+
+note right of Review
+  Rating: 0 à 10 par pas de 0.5
+  Visibilité: PUBLIC ou PRIVÉ
+  Un utilisateur = 1 review par anime
+end note
+
+note right of Group
+  Type OFFICIEL: créé auto par anime
+  Type PERSONNALISE: créé par user/modo
+  Les groupes officiels ne peuvent pas
+  être supprimés.
+end note
+
+@enduml

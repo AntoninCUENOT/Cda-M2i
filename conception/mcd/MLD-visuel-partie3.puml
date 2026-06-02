@@ -1,0 +1,80 @@
+@startuml MLD - AnimeTracker (Partie 3)
+
+' Style
+skinparam linetype ortho
+
+title Modèle Logique de Données (MLD) - Partie 3: Notifications & Modération
+
+' ============================
+' TABLES
+' ============================
+
+entity USER {
+  * id_user : UUID <<PK>>
+  --
+  pseudo : VARCHAR(50)
+  role : ENUM
+}
+
+entity NOTIFICATION {
+  * id_notification : UUID <<PK>>
+  --
+  # id_user : UUID <<FK>>
+  type : ENUM
+  title : VARCHAR(255)
+  message : TEXT
+  related_entity_id : UUID
+  is_read : BOOLEAN
+  created_at : TIMESTAMP
+}
+
+entity NOTIFICATION_PREFERENCES {
+  * id_preferences : UUID <<PK>>
+  --
+  # id_user : UUID <<FK,UQ>>
+  new_follower : BOOLEAN
+  new_episode : BOOLEAN
+  new_message : BOOLEAN
+  group_reply : BOOLEAN
+  updated_at : TIMESTAMP
+}
+
+entity REPORT {
+  * id_report : UUID <<PK>>
+  --
+  # id_reporter : UUID <<FK>>
+  reported_entity_type : ENUM
+  reported_entity_id : UUID
+  reason : VARCHAR(255)
+  description : TEXT
+  status : ENUM
+  # id_reviewed_by : UUID <<FK>>
+  reviewed_at : TIMESTAMP
+  created_at : TIMESTAMP
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+USER ||--o{ NOTIFICATION : "reçoit"
+USER ||--|| NOTIFICATION_PREFERENCES : "configure"
+USER ||--o{ REPORT : "signale"
+USER ||--o{ REPORT : "traite"
+
+note right of NOTIFICATION
+  Types:
+  - NOUVEAU_FOLLOWER
+  - NOUVEL_EPISODE
+  - NOUVEAU_MESSAGE
+  - REPONSE_GROUPE
+end note
+
+note right of REPORT
+  Entités signalables:
+  - REVIEW
+  - MESSAGE
+  - GROUP_MESSAGE
+end note
+
+@enduml

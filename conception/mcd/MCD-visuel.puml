@@ -1,0 +1,210 @@
+@startuml MCD - AnimeTracker
+
+' Style
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+title Modèle Conceptuel de Données (MCD) - AnimeTracker
+
+' ============================
+' ENTITÉS
+' ============================
+
+entity USER {
+  * id_user : UUID
+  --
+  email
+  password
+  pseudo
+  photo
+  bio
+  role
+  is_active
+  is_suspended
+  suspension_end_date
+  created_at
+  updated_at
+}
+
+entity ANIME {
+  * id_anime : Integer (MAL ID)
+  --
+  title
+  title_english
+  synopsis
+  image_url
+  trailer_url
+  episodes
+  score
+  year
+  status
+  aired_from
+  aired_to
+  last_fetched_at
+}
+
+entity GENRE {
+  * id_genre : Integer
+  --
+  name
+}
+
+entity STUDIO {
+  * id_studio : Integer
+  --
+  name
+}
+
+entity REVIEW {
+  * id_review : UUID
+  --
+  rating
+  comment
+  visibility
+  likes_count
+  created_at
+  updated_at
+}
+
+entity GROUP {
+  * id_group : UUID
+  --
+  name
+  description
+  type
+  is_public
+  created_at
+  updated_at
+}
+
+entity CONVERSATION {
+  * id_conversation : UUID
+  --
+  created_at
+  updated_at
+}
+
+entity MESSAGE {
+  * id_message : UUID
+  --
+  content
+  is_read
+  created_at
+}
+
+entity GROUP_MESSAGE {
+  * id_group_message : UUID
+  --
+  content
+  created_at
+  deleted_at
+}
+
+entity NOTIFICATION {
+  * id_notification : UUID
+  --
+  type
+  title
+  message
+  related_entity_id
+  is_read
+  created_at
+}
+
+entity NOTIFICATION_PREFERENCES {
+  * id_preferences : UUID
+  --
+  new_follower
+  new_episode
+  new_message
+  group_reply
+  updated_at
+}
+
+entity REPORT {
+  * id_report : UUID
+  --
+  reported_entity_type
+  reported_entity_id
+  reason
+  description
+  status
+  reviewed_at
+  created_at
+}
+
+' ============================
+' ASSOCIATIONS
+' ============================
+
+' USER - ANIME (Bibliothèque)
+USER "1,n" -- "0,n" ANIME : "POSSEDE >\nstatus\nepisodes_watched\nstarted_at\ncompleted_at"
+
+' USER - ANIME (Review)
+USER "0,n" -- "0,n" REVIEW
+REVIEW "0,n" -- "1,1" ANIME : "EVALUE >"
+
+' USER - REVIEW (Like)
+USER "0,n" -- "0,n" REVIEW : "LIKE >\ncreated_at"
+
+' USER - USER (Follow)
+USER "0,n" -- "0,n" USER : "SUIT >\ncreated_at"
+
+' USER - CONVERSATION
+USER "0,n" -- "1,n" CONVERSATION : "PARTICIPE >\njoined_at"
+
+' USER - MESSAGE
+USER "1,1" -- "0,n" MESSAGE : "ENVOIE >"
+CONVERSATION "1,1" -- "0,n" MESSAGE : "CONTIENT >"
+
+' USER - GROUP
+USER "1,1" -- "0,n" GROUP : "CREE >"
+USER "0,n" -- "0,n" GROUP : "MEMBRE_DE >\nis_moderator\njoined_at"
+
+' GROUP - GROUP_MESSAGE
+USER "1,1" -- "0,n" GROUP_MESSAGE : "POSTE >"
+GROUP "1,1" -- "0,n" GROUP_MESSAGE : "CONTIENT >"
+USER "0,1" -- "0,n" GROUP_MESSAGE : "SUPPRIME >"
+
+' ANIME - GROUP (officiel)
+ANIME "0,1" -- "0,1" GROUP : "GROUPE_OFFICIEL >"
+
+' ANIME - GENRE
+ANIME "0,n" -- "1,n" GENRE : "APPARTIENT_A >"
+
+' ANIME - STUDIO
+ANIME "0,n" -- "0,1" STUDIO : "PRODUIT_PAR >"
+
+' USER - NOTIFICATION
+USER "1,1" -- "0,n" NOTIFICATION : "RECOIT >"
+
+' USER - NOTIFICATION_PREFERENCES
+USER "1,1" -- "1,1" NOTIFICATION_PREFERENCES : "CONFIGURE >"
+
+' USER - REPORT
+USER "1,1" -- "0,n" REPORT : "SIGNALE >"
+USER "0,1" -- "0,n" REPORT : "TRAITE >"
+
+' Notes
+note right of USER
+  Acteur principal
+  Authentification JWT
+end note
+
+note right of ANIME
+  Données Jikan API
+  Cache local
+end note
+
+note right of REVIEW
+  Rating: 0 à 10 (pas 0.5)
+  Visibilité: PUBLIC/PRIVE
+  1 review max par user/anime
+end note
+
+note right of GROUP
+  Type OFFICIEL: auto-créé
+  Type PERSONNALISE: créé par user
+end note
+
+@enduml

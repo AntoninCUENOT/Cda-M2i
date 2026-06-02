@@ -1,0 +1,102 @@
+@startuml Diagramme de séquence - Inscription et Connexion
+
+title Scénario : Inscription et Connexion d'un utilisateur
+
+actor Utilisateur as user
+participant "Application\nMobile" as app
+participant "API\nBackend" as api
+database "Base de\nDonnées" as db
+
+== Inscription ==
+
+user -> app : Remplit formulaire inscription\n(email, pseudo, password)
+activate app
+
+app -> app : Valide format email\net force du password
+
+app -> api : POST /auth/register\n{email, pseudo, password}
+activate api
+
+api -> api : Hash du password\n(bcrypt)
+
+api -> db : Vérifie unicité\nemail et pseudo
+activate db
+db --> api : OK (uniques)
+deactivate db
+
+api -> db : INSERT INTO user\n(email, pseudo, password_hash, role='USER')
+activate db
+db --> api : Utilisateur créé
+deactivate db
+
+api -> db : INSERT INTO notification_preferences\n(id_user, valeurs par défaut)
+activate db
+db --> api : Préférences créées
+deactivate db
+
+api --> app : 201 Created\n{user_id, message: "Compte créé"}
+deactivate api
+
+app --> user : Confirmation inscription\nRedirection vers connexion
+deactivate app
+
+== Connexion ==
+
+user -> app : Saisit email et password
+activate app
+
+app -> api : POST /auth/login\n{email, password}
+activate api
+
+api -> db : SELECT * FROM user\nWHERE email = ?
+activate db
+db --> api : Données utilisateur
+deactivate db
+
+api -> api : Compare password\navec hash (bcrypt)
+
+alt Password correct
+    api -> api : Génère token JWT\n(id_user, role, exp: 7j)
+
+    api --> app : 200 OK\n{token, user: {id, pseudo, photo, role}}
+    deactivate api
+
+    app -> app : Stocke token\nen local (SecureStore)
+
+    app --> user : Connexion réussie\nRedirection vers Home
+    deactivate app
+
+else Password incorrect
+    api --> app : 401 Unauthorized\n{error: "Identifiants incorrects"}
+    app --> user : Affiche erreur
+end
+
+== Accès aux ressources protégées ==
+
+user -> app : Consulte son profil
+activate app
+
+app -> api : GET /users/me\nAuthorization: Bearer {token}
+activate api
+
+api -> api : Vérifie et décode JWT
+
+alt Token valide
+    api -> db : SELECT * FROM user\nWHERE id_user = ?
+    activate db
+    db --> api : Données utilisateur
+    deactivate db
+
+    api --> app : 200 OK\n{user data}
+    deactivate api
+
+    app --> user : Affiche profil
+    deactivate app
+
+else Token invalide ou expiré
+    api --> app : 401 Unauthorized\n{error: "Token invalide"}
+    app -> app : Supprime token local
+    app --> user : Redirection vers login
+end
+
+@enduml

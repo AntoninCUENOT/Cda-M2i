@@ -1,0 +1,49 @@
+
+<svg width="390" height="844" viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond écran -->
+  <rect x="0" y="0" width="390" height="844" rx="44" fill="#fff" />
+  <!-- Barre de statut -->
+  <rect x="0" y="0" width="390" height="44" rx="0" fill="rgba(0,0,0,0.03)" />
+  <text x="20" y="28" font-size="13" fill="#111827" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">9:41</text>
+  <text x="370" y="28" font-size="11" fill="#6B7280" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">●●● ☁ 🔋</text>
+  <!-- Contenu -->
+  
+  <rect x="0" y="44" width="390" height="800" rx="0" fill="#fff" />
+
+  <!-- Logo -->
+  <circle cx="195" cy="160" r="40" fill="#EDE9FE"/>
+  <text x="195" y="154" font-size="28" fill="#8B5CF6" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">▶</text>
+  <text x="195" y="175" font-size="12" fill="#8B5CF6" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">AT</text>
+  <text x="195" y="220" font-size="22" fill="#1E1B4B" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">AnimeTracker</text>
+  <text x="195" y="245" font-size="14" fill="#6B7280" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Bienvenue !</text>
+
+  <!-- Champs -->
+  <text x="30" y="290" font-size="12" fill="#6B7280" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Email</text>
+  <rect x="20" y="300" width="350" height="48" rx="10" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+   <text x="34" y="329" font-size="13" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">votre@email.com</text>
+
+  <text x="30" y="375" font-size="12" fill="#6B7280" font-weight="600" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">Mot de passe</text>
+  <rect x="20" y="385" width="350" height="48" rx="10" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/>
+   <text x="34" y="414" font-size="13" fill="#9CA3AF" font-weight="normal" text-anchor="start" font-family="SF Pro Display, -apple-system, sans-serif">••••••••</text>
+  <text x="360" y="415" font-size="16" fill="#111827" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">👁</text>
+
+  <text x="368" y="455" font-size="12" fill="#8B5CF6" font-weight="normal" text-anchor="end" font-family="SF Pro Display, -apple-system, sans-serif">Mot de passe oublié ?</text>
+
+  <!-- Bouton login -->
+  <rect x="20" y="475" width="350" height="50" rx="12" fill="#8B5CF6" />
+  <text x="195" y="505" font-size="16" fill="#fff" font-weight="600" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Se connecter</text>
+
+  <!-- Séparateur -->
+  <rect x="20" y="545" width="155" height="1" rx="0" fill="#E5E7EB" />
+  <text x="195" y="550" font-size="12" fill="#9CA3AF" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">ou</text>
+  <rect x="215" y="545" width="155" height="1" rx="0" fill="#E5E7EB" />
+
+  <text x="195" y="590" font-size="13" fill="#6B7280" font-weight="normal" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">Pas encore de compte ?</text>
+  <text x="195" y="615" font-size="14" fill="#8B5CF6" font-weight="700" text-anchor="middle" font-family="SF Pro Display, -apple-system, sans-serif">S'inscrire</text>
+
+  <!-- Barre de navigation -->
+  <rect x="0" y="764" width="390" height="80" rx="0" fill="#FFFFFF" />
+  <rect x="0" y="764" width="390" height="1" rx="0" fill="#E5E7EB" />
+  <!-- Indicateur home -->
+  <rect x="135" y="836" width="120" height="4" rx="2" fill="#000" />
+</svg>

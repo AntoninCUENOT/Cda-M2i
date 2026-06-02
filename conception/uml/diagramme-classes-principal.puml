@@ -1,0 +1,147 @@
+@startuml Diagramme de classes Principal - AnimeTracker
+
+' Configuration du style
+skinparam classAttributeIconSize 0
+
+title Diagramme de Classes Principal - Entités Métier
+
+' ============================
+' ENUMERATIONS
+' ============================
+
+enum AnimeStatus {
+  A_VOIR
+  EN_COURS
+  TERMINE
+  ABANDONNE
+}
+
+enum UserRole {
+  USER
+  MODERATEUR
+  ADMIN
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVE
+}
+
+' ============================
+' CLASSES PRINCIPALES
+' ============================
+
+class User {
+  - id: UUID
+  - email: String
+  - password: String (hashed)
+  - pseudo: String
+  - photo: String (URL)
+  - bio: String
+  - role: UserRole
+  - isActive: Boolean
+  - createdAt: DateTime
+  - updatedAt: DateTime
+  --
+  + register(): void
+  + login(): String
+  + updateProfile(): void
+  + deleteAccount(): void
+}
+
+class Anime {
+  - id: Integer (MAL ID)
+  - title: String
+  - titleEnglish: String
+  - synopsis: String
+  - imageUrl: String
+  - episodes: Integer
+  - score: Float
+  - year: Integer
+  - lastFetchedAt: DateTime
+  --
+  + fetchFromJikanAPI(): void
+  + updateFromAPI(): void
+}
+
+class UserAnime {
+  - id: UUID
+  - userId: UUID
+  - animeId: Integer
+  - status: AnimeStatus
+  - episodesWatched: Integer
+  - startedAt: DateTime
+  - completedAt: DateTime
+  --
+  + updateStatus(): void
+  + updateProgress(): void
+}
+
+class Review {
+  - id: UUID
+  - userId: UUID
+  - animeId: Integer
+  - rating: Float
+  - comment: String
+  - visibility: Visibility
+  - likesCount: Integer
+  - createdAt: DateTime
+  --
+  + create(): void
+  + update(): void
+  + delete(): void
+  + toggleVisibility(): void
+}
+
+class ReviewLike {
+  - id: UUID
+  - reviewId: UUID
+  - userId: UUID
+  - createdAt: DateTime
+}
+
+class Genre {
+  - id: Integer
+  - name: String
+}
+
+class Studio {
+  - id: Integer
+  - name: String
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+User "1" -- "0..*" UserAnime : possède >
+User "1" -- "0..*" Review : écrit >
+User "1" -- "0..*" ReviewLike : like >
+
+Anime "1" -- "0..*" UserAnime : suivi par >
+Anime "1" -- "0..*" Review : évalué par >
+Anime "0..*" -- "0..*" Genre : appartient à >
+Anime "0..*" -- "0..1" Studio : produit par >
+
+Review "1" -- "0..*" ReviewLike : aimé par >
+
+User -- UserRole
+UserAnime -- AnimeStatus
+Review -- Visibility
+
+note right of User
+  Authentification par JWT
+  Password hashé avec bcrypt
+end note
+
+note right of Anime
+  Données de Jikan API v4
+  Cache local
+end note
+
+note right of Review
+  Rating: 0 à 10 (pas de 0.5)
+  1 review max par user/anime
+end note
+
+@enduml

@@ -1,0 +1,244 @@
+@startuml Architecture de Déploiement - AnimeTracker
+
+title Architecture de Déploiement (Production)
+
+skinparam componentStyle rectangle
+
+' ============================
+' UTILISATEURS
+' ============================
+
+actor "Utilisateurs\nMobile" as users
+
+' ============================
+' DEVICES MOBILES
+' ============================
+
+node "Smartphones\niOS / Android" as mobile_device {
+  component [Application\nReact Native\nExpo] as mobile_app
+  database "AsyncStorage\n(Local)" as local_storage
+}
+
+' ============================
+' CDN & ASSETS
+' ============================
+
+cloud "CDN" as cdn {
+  component [Cloudinary\nou AWS S3] as cdn_storage {
+    artifact "Images profils" as profile_images
+    artifact "Assets statiques" as static_assets
+  }
+}
+
+' ============================
+' SERVEUR DE PRODUCTION
+' ============================
+
+node "Serveur Cloud\n(VPS / AWS EC2 / Heroku)" as prod_server {
+
+  component [Nginx\nReverse Proxy] as nginx {
+    note right
+      - HTTPS (SSL/TLS)
+      - Load balancing
+      - Compression gzip
+      - Rate limiting
+    end note
+  }
+
+  component [PM2\nProcess Manager] as pm2 {
+    note right
+      - 4 instances Node.js
+      - Auto-restart
+      - Clustering
+      - Logs
+    end note
+  }
+
+  component [API Backend\nNode.js + Express] as backend_api
+
+  component [Cron Service\nnode-cron] as cron_service
+}
+
+' ============================
+' BASE DE DONNÉES
+' ============================
+
+node "Serveur BDD\n(Managed Database)" as db_server {
+  database "PostgreSQL 15\nPrimaire" as postgres_primary {
+    note right
+      - 18 tables
+      - Triggers
+      - Index
+      - Backups quotidiens
+    end note
+  }
+
+  database "PostgreSQL\nRéplica (Lecture)" as postgres_replica {
+    note right
+      Optionnel:
+      Pour lectures intensives
+    end note
+  }
+}
+
+' ============================
+' CACHE (Optionnel)
+' ============================
+
+node "Cache Redis\n(Optionnel)" as redis_node {
+  database [Redis] as redis {
+    note right
+      - Cache API Jikan
+      - Sessions (optionnel)
+      - Rate limiting
+    end note
+  }
+}
+
+' ============================
+' SERVICES EXTERNES
+' ============================
+
+cloud "Jikan API\nMyAnimeList" as jikan_cloud {
+  component [api.jikan.moe] as jikan_api
+}
+
+cloud "Expo Services" as expo_cloud {
+  component [Expo Push\nNotification Service] as expo_push
+  component [Expo Updates\n(OTA)] as expo_updates
+}
+
+cloud "Monitoring" as monitoring_cloud {
+  component [Sentry\nError Tracking] as sentry
+  component [DataDog / New Relic\nAPM] as apm
+}
+
+' ============================
+' CI/CD
+' ============================
+
+cloud "CI/CD Pipeline" as cicd {
+  component [GitHub Actions\nou GitLab CI] as github_actions {
+    artifact "Tests" as tests
+    artifact "Build" as build
+    artifact "Deploy" as deploy
+  }
+}
+
+' ============================
+' CONNEXIONS
+' ============================
+
+' Users -> Mobile App
+users --> mobile_app : Utilise
+
+' Mobile App -> Services
+mobile_app --> nginx : HTTPS\nAPI Requests
+mobile_app --> cdn_storage : HTTPS\nImages
+mobile_app --> expo_push : Receive\nPush Notifs
+mobile_app --> local_storage : Read/Write\nToken JWT
+
+' Mobile App -> Expo Services
+mobile_app --> expo_updates : OTA Updates
+
+' Nginx -> Backend
+nginx --> pm2 : Proxy
+pm2 --> backend_api : Manage
+
+' Backend -> Database
+backend_api --> postgres_primary : Read/Write\nSQL
+backend_api --> postgres_replica : Read Only\n(Optionnel)
+
+postgres_primary --> postgres_replica : Réplication\nAsynchrone
+
+' Backend -> Cache
+backend_api --> redis : Cache\nGet/Set
+
+' Backend -> Externes
+backend_api --> jikan_api : REST API\nFetch Animes
+backend_api --> expo_push : Send Push\nNotifications
+backend_api --> cdn_storage : Upload Images
+
+' Cron Jobs
+cron_service --> backend_api : Appelle\nServices
+cron_service --> postgres_primary : Direct\nAccess
+
+' Monitoring
+backend_api --> sentry : Error Logs
+backend_api --> apm : Performance\nMetrics
+mobile_app --> sentry : Client Errors
+
+' CI/CD
+cicd --> prod_server : Deploy\nAPI
+cicd --> mobile_app : Build &\nPublish
+
+' Notes de déploiement
+note right of prod_server
+  **Environnement Production:**
+  - OS: Ubuntu 22.04 LTS
+  - Node.js: 18.x LTS
+  - RAM: 4-8 GB
+  - CPU: 2-4 vCores
+  - Storage: 50-100 GB SSD
+end note
+
+note right of db_server
+  **Base de données:**
+  - PostgreSQL 15+
+  - Storage: 20-50 GB
+  - Backups automatiques
+  - Point-in-time recovery
+
+  **Providers suggérés:**
+  - AWS RDS
+  - DigitalOcean Managed DB
+  - Supabase
+  - Neon
+end note
+
+note right of nginx
+  **Configuration Nginx:**
+  server {
+    listen 443 ssl http2;
+    server_name api.animetracker.com;
+
+    ssl_certificate /path/cert.pem;
+    ssl_certificate_key /path/key.pem;
+
+    location / {
+      proxy_pass http://localhost:3000;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection 'upgrade';
+    }
+  }
+end note
+
+note right of pm2
+  **PM2 Configuration:**
+  module.exports = {
+    apps: [{
+      name: 'animetracker-api',
+      script: './dist/server.js',
+      instances: 4,
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      }
+    }]
+  }
+end note
+
+note right of mobile_app
+  **Build Mobile:**
+  - Expo EAS Build
+  - iOS: TestFlight → App Store
+  - Android: Internal Testing → Play Store
+
+  **Over-The-Air Updates:**
+  - Expo Updates
+  - Déploiement sans stores
+end note
+
+@enduml

@@ -1,0 +1,187 @@
+@startuml Diagramme de séquence - Créer une Review
+
+title Scénario : Créer une review sur un anime
+
+actor Utilisateur as user
+participant "Application\nMobile" as app
+participant "API\nBackend" as api
+database "Base de\nDonnées" as db
+
+== Accès au formulaire de review ==
+
+user -> app : Ouvre fiche anime\n(id: 21)
+activate app
+
+app -> api : GET /animes/21
+activate api
+
+api -> db : Récupère anime + reviews publiques
+activate db
+db --> api : Données anime + reviews
+deactivate db
+
+api --> app : 200 OK\n{anime, reviews}
+deactivate api
+
+app --> user : Affiche fiche anime\navec reviews existantes
+deactivate app
+
+user -> app : Clique "Écrire une review"
+activate app
+
+app -> api : GET /users/me/animes/21/review
+activate api
+
+api -> db : SELECT * FROM review\nWHERE id_user = ? AND id_anime = 21
+activate db
+
+alt Review déjà existante
+    db --> api : Review existante
+    deactivate db
+
+    api --> app : 200 OK\n{review existante}
+    deactivate api
+
+    app --> user : Affiche formulaire\navec données existantes (mode édition)
+
+else Aucune review
+    db --> api : NULL
+    deactivate db
+
+    api --> app : 404 Not Found
+    deactivate api
+
+    app --> user : Affiche formulaire vide\n(mode création)
+end
+
+deactivate app
+
+== Création de la review ==
+
+user -> app : Saisit note (8.5)\net commentaire\nSélectionne visibilité "PUBLIC"
+activate app
+
+app -> app : Valide les données:\n- Note: 0-10 (pas 0.5)\n- Commentaire: max 2000 chars
+
+app -> api : POST /users/me/animes/21/review\n{rating: 8.5, comment: "...", visibility: "PUBLIC"}
+activate api
+
+api -> api : Vérifie JWT et extrait id_user
+
+api -> db : SELECT * FROM review\nWHERE id_user = ? AND id_anime = 21
+activate db
+
+alt Review déjà existante (doublon)
+    db --> api : Review existante
+    deactivate db
+
+    api --> app : 409 Conflict\n{error: "Review déjà existante"}
+    deactivate api
+
+    app --> user : Message: "Vous avez déjà\névalué cet anime"
+    deactivate app
+
+else Aucune review existante
+    db --> api : NULL
+    deactivate db
+
+    ' Vérifie que l'anime est dans la bibliothèque
+    api -> db : SELECT * FROM user_anime\nWHERE id_user = ? AND id_anime = 21
+    activate db
+    db --> api : Anime dans bibliothèque
+    deactivate db
+
+    api -> db : INSERT INTO review\n(id_user, id_anime, rating=8.5,\ncomment="...", visibility='PUBLIC',\nlikes_count=0)
+    activate db
+    db --> api : Review créée\n(id_review)
+    deactivate db
+
+    api --> app : 201 Created\n{review détails}
+    deactivate api
+
+    app --> user : Confirmation\n"Review publiée avec succès"
+    deactivate app
+end
+
+== Consultation des reviews publiques ==
+
+user -> app : Consulte reviews de l'anime
+activate app
+
+app -> api : GET /animes/21/reviews?visibility=public
+activate api
+
+api -> db : SELECT review.*, user.pseudo, user.photo\nFROM review\nJOIN user ON review.id_user = user.id_user\nWHERE review.id_anime = 21\nAND review.visibility = 'PUBLIC'\nORDER BY likes_count DESC, created_at DESC
+activate db
+db --> api : Liste reviews publiques
+deactivate db
+
+api --> app : 200 OK\n[{reviews avec auteurs}]
+deactivate api
+
+app --> user : Affiche liste reviews\n(avec note, auteur, likes)
+deactivate app
+
+== Liker une review ==
+
+user -> app : Clique "Like" sur review\n(id_review: abc123)
+activate app
+
+app -> api : POST /reviews/abc123/like
+activate api
+
+api -> api : Vérifie JWT et extrait id_user
+
+' Vérifie que ce n'est pas sa propre review
+api -> db : SELECT id_user FROM review\nWHERE id_review = 'abc123'
+activate db
+db --> api : id_user de l'auteur
+deactivate db
+
+alt C'est sa propre review
+    api --> app : 403 Forbidden\n{error: "Impossible de liker\nsa propre review"}
+    deactivate api
+
+    app --> user : Message d'erreur
+    deactivate app
+
+else Review d'un autre utilisateur
+    ' Vérifie si déjà liké
+    api -> db : SELECT * FROM review_like\nWHERE id_review = 'abc123'\nAND id_user = ?
+    activate db
+
+    alt Déjà liké
+        db --> api : Like existant
+        deactivate db
+
+        api --> app : 409 Conflict\n{error: "Review déjà likée"}
+        deactivate api
+
+        app --> user : Message: "Déjà liké"
+        deactivate app
+
+    else Pas encore liké
+        db --> api : NULL
+        deactivate db
+
+        api -> db : INSERT INTO review_like\n(id_review, id_user)
+        activate db
+        note right
+          Le trigger increment_review_likes()
+          incrémente automatiquement
+          likes_count dans review
+        end note
+        db --> api : Like ajouté
+        deactivate db
+
+        api --> app : 201 Created\n{likes_count: 15}
+        deactivate api
+
+        app -> app : Met à jour UI\n(compteur +1, icône remplie)
+
+        app --> user : Like ajouté visuellement
+        deactivate app
+    end
+end
+
+@enduml

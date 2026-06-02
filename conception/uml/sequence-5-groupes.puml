@@ -1,0 +1,243 @@
+@startuml Diagramme de séquence - Groupes de Discussion
+
+title Scénario : Créer et rejoindre un groupe de discussion
+
+actor Utilisateur as user
+participant "Application\nMobile" as app
+participant "API\nBackend" as api
+database "Base de\nDonnées" as db
+
+== Consulter les groupes d'un anime ==
+
+user -> app : Ouvre fiche anime\n(One Piece, id: 21)
+activate app
+
+app -> api : GET /animes/21/groups
+activate api
+
+api -> db : SELECT * FROM "group"\nWHERE id_anime = 21
+activate db
+db --> api : Groupes (officiel + personnalisés)
+deactivate db
+
+api --> app : 200 OK\n[{groups}]
+deactivate api
+
+app --> user : Affiche:\n- Groupe officiel "Discussion - One Piece"\n- Groupes personnalisés liés
+deactivate app
+
+== Rejoindre le groupe officiel ==
+
+user -> app : Clique "Rejoindre"\nle groupe officiel
+activate app
+
+app -> api : POST /groups/{group_id}/join
+activate api
+
+api -> api : Vérifie JWT (id_user)
+
+api -> db : SELECT * FROM group_member\nWHERE id_group = ? AND id_user = ?
+activate db
+
+alt Déjà membre
+    db --> api : Membre existant
+    deactivate db
+
+    api --> app : 409 Conflict\n{error: "Déjà membre"}
+    deactivate api
+
+    app --> user : Message: "Déjà membre du groupe"
+    deactivate app
+
+else Pas encore membre
+    db --> api : NULL
+    deactivate db
+
+    api -> db : INSERT INTO group_member\n(id_group, id_user, is_moderator=false)
+    activate db
+    db --> api : Membre ajouté
+    deactivate db
+
+    api --> app : 201 Created
+    deactivate api
+
+    app --> user : "Vous avez rejoint le groupe"\nBouton devient "Quitter"
+    deactivate app
+end
+
+== Créer un groupe personnalisé ==
+
+user -> app : Clique "Créer un groupe"
+activate app
+
+app --> user : Affiche formulaire:\n- Nom du groupe\n- Description\n- Lié à un anime ? (optionnel)\n- Public/Privé
+deactivate app
+
+user -> app : Remplit:\nNom: "Fans Arc Wano"\nDescription: "Discussion sur Arc Wano"\nAnime: One Piece (21)\nPublic: true
+activate app
+
+app -> app : Valide:\n- Nom min 3 caractères\n- Description optionnelle
+
+app -> api : POST /groups\n{name: "Fans Arc Wano",\ndescription: "...",\nid_anime: 21,\ntype: "PERSONNALISE",\nis_public: true}
+activate api
+
+api -> api : Vérifie JWT (id_user)\nVérifie role (USER minimum)
+
+api -> db : SELECT * FROM "group"\nWHERE name = 'Fans Arc Wano'
+activate db
+
+alt Nom déjà utilisé
+    db --> api : Groupe existant
+    deactivate db
+
+    api --> app : 409 Conflict\n{error: "Nom déjà utilisé"}
+    deactivate api
+
+    app --> user : "Ce nom existe déjà"
+    deactivate app
+
+else Nom disponible
+    db --> api : NULL
+    deactivate db
+
+    api -> db : INSERT INTO "group"\n(name, description, type='PERSONNALISE',\nid_anime=21, id_creator=id_user,\nis_public=true)
+    activate db
+    db --> api : Groupe créé\n(id_group)
+    deactivate db
+
+    ' Le créateur devient automatiquement membre et modérateur
+    api -> db : INSERT INTO group_member\n(id_group, id_user, is_moderator=true)
+    activate db
+    db --> api : Créateur ajouté comme modérateur
+    deactivate db
+
+    api --> app : 201 Created\n{group détails}
+    deactivate api
+
+    app --> user : "Groupe créé avec succès"\nRedirection vers le groupe
+    deactivate app
+end
+
+== Publier un message dans le groupe ==
+
+user -> app : Ouvre groupe\n"Fans Arc Wano"
+activate app
+
+app -> api : GET /groups/{group_id}/messages?limit=50
+activate api
+
+api -> api : Vérifie JWT
+
+' Vérifie que l'user est membre
+api -> db : SELECT * FROM group_member\nWHERE id_group = ? AND id_user = ?
+activate db
+
+alt Pas membre du groupe
+    db --> api : NULL
+    deactivate db
+
+    api --> app : 403 Forbidden\n{error: "Accès refusé"}
+    deactivate api
+
+    app --> user : "Rejoignez le groupe\npour voir les messages"
+    deactivate app
+
+else Membre du groupe
+    db --> api : Membre confirmé
+    deactivate db
+
+    api -> db : SELECT gm.*, u.pseudo, u.photo\nFROM group_message gm\nJOIN user u ON gm.id_author = u.id_user\nWHERE gm.id_group = ?\nAND gm.deleted_at IS NULL\nORDER BY created_at DESC LIMIT 50
+    activate db
+    db --> api : Messages du groupe
+    deactivate db
+
+    api --> app : 200 OK\n[{messages}]
+    deactivate api
+
+    app --> user : Affiche fil de discussion
+    deactivate app
+end
+
+user -> app : Écrit message:\n"Qui a préféré l'épisode 1015 ?"
+activate app
+
+app -> api : POST /groups/{group_id}/messages\n{content: "Qui a préféré..."}
+activate api
+
+api -> api : Vérifie JWT et membre du groupe
+
+api -> db : INSERT INTO group_message\n(id_group, id_author=id_user,\ncontent="Qui a préféré...")
+activate db
+db --> api : Message créé
+deactivate db
+
+' Notification aux autres membres (optionnel selon préférences)
+api -> db : SELECT DISTINCT gm.id_user\nFROM group_member gm\nJOIN notification_preferences np\n  ON gm.id_user = np.id_user\nWHERE gm.id_group = ?\nAND gm.id_user != ?\nAND np.group_reply = true
+activate db
+db --> api : Liste membres à notifier
+deactivate db
+
+loop Pour chaque membre
+    api -> db : INSERT INTO notification\n(id_user, type='REPONSE_GROUPE',\ntitle="Nouveau message dans...",\nrelated_entity_id=id_group)
+    activate db
+    db --> api : Notification créée
+    deactivate db
+end
+
+api --> app : 201 Created\n{message}
+deactivate api
+
+app --> user : Message publié dans le groupe
+deactivate app
+
+== Modération : Supprimer un message ==
+
+note over user, app
+  Un modérateur ou le créateur
+  du groupe peut supprimer des messages
+end note
+
+user -> app : Appui long sur message\nd'un autre utilisateur\nClique "Supprimer"
+activate app
+
+app -> app : Vérifie que l'user\nest modérateur du groupe
+
+app -> api : DELETE /groups/{group_id}/messages/{message_id}
+activate api
+
+api -> api : Vérifie JWT
+
+' Vérifie que l'user est modérateur
+api -> db : SELECT is_moderator FROM group_member\nWHERE id_group = ? AND id_user = ?
+activate db
+
+alt Pas modérateur
+    db --> api : is_moderator = false
+    deactivate db
+
+    api --> app : 403 Forbidden\n{error: "Droits insuffisants"}
+    deactivate api
+
+    app --> user : "Vous n'êtes pas modérateur"
+    deactivate app
+
+else Modérateur confirmé
+    db --> api : is_moderator = true
+    deactivate db
+
+    ' Soft delete du message
+    api -> db : UPDATE group_message\nSET deleted_at = NOW(),\nid_deleted_by = id_user\nWHERE id_group_message = ?
+    activate db
+    db --> api : Message supprimé
+    deactivate db
+
+    api --> app : 200 OK
+    deactivate api
+
+    app -> app : Retire message de l'UI
+
+    app --> user : "Message supprimé"
+    deactivate app
+end
+
+@enduml

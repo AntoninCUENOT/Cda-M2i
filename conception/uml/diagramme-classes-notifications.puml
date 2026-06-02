@@ -1,0 +1,100 @@
+@startuml Diagramme de classes Notifications - AnimeTracker
+
+' Configuration du style
+skinparam classAttributeIconSize 0
+
+title Diagramme de Classes - Notifications et Modération
+
+' ============================
+' ENUMERATIONS
+' ============================
+
+enum NotificationType {
+  NOUVEAU_FOLLOWER
+  NOUVEL_EPISODE
+  NOUVEAU_MESSAGE
+  REPONSE_GROUPE
+}
+
+enum ReportStatus {
+  EN_ATTENTE
+  TRAITE
+  REJETE
+}
+
+' ============================
+' CLASSES
+' ============================
+
+class User {
+  - id: UUID
+  - pseudo: String
+  - role: UserRole
+}
+
+class Notification {
+  - id: UUID
+  - userId: UUID
+  - type: NotificationType
+  - title: String
+  - message: String
+  - relatedEntityId: UUID
+  - isRead: Boolean
+  - createdAt: DateTime
+  --
+  + send(): void
+  + markAsRead(): void
+}
+
+class NotificationPreferences {
+  - id: UUID
+  - userId: UUID
+  - newFollower: Boolean
+  - newEpisode: Boolean
+  - newMessage: Boolean
+  - groupReply: Boolean
+  - updatedAt: DateTime
+  --
+  + updatePreferences(): void
+}
+
+class Report {
+  - id: UUID
+  - reporterId: UUID
+  - reportedEntityType: String
+  - reportedEntityId: UUID
+  - reason: String
+  - description: String
+  - status: ReportStatus
+  - reviewedBy: UUID
+  - reviewedAt: DateTime
+  - createdAt: DateTime
+  --
+  + create(): void
+  + review(): void
+  + resolve(): void
+}
+
+' ============================
+' RELATIONS
+' ============================
+
+User "1" -- "0..*" Notification : reçoit >
+User "1" -- "1" NotificationPreferences : configure >
+User "1" -- "0..*" Report : signale >
+User "1" -- "0..*" Report : traite >
+
+Notification -- NotificationType
+Report -- ReportStatus
+
+note right of Notification
+  Push + in-app
+  Selon préférences user
+end note
+
+note right of Report
+  Pour Review, Message,
+  GroupMessage
+end note
+
+@enduml
