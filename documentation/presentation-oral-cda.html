@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnimeTracker — Soutenance CDA · Antonin CUENOT</title>
+<style>
+  /* ── DA FIDÈLE À L'APP ──────────────────────────────────────────────────
+     primary  : #8B5CF6 (violet)    secondary: #06B6D4 (cyan)
+     gradient : #6D28D9 → #8B5CF6 → #22D3EE  (headers app)
+     bg light : #FFFFFF / #F9FAFB / #F3F4F6
+     text     : #111827 / #6B7280 / #9CA3AF
+     success  : #10B981   warning: #F59E0B   error: #EF4444
+     card     : #FFFFFF + border #E5E7EB
+  ── ──────────────────────────────────────────────────────────────────── */
+  :root {
+    --p500:  #8B5CF6;
+    --p600:  #7C3AED;
+    --p700:  #6D28D9;
+    --s400:  #22D3EE;
+    --s500:  #06B6D4;
+    --s600:  #0891B2;
+    --bg0:   #FFFFFF;
+    --bg1:   #F9FAFB;
+    --bg2:   #F3F4F6;
+    --t1:    #111827;
+    --t2:    #374151;
+    --t3:    #6B7280;
+    --t4:    #9CA3AF;
+    --b1:    #E5E7EB;
+    --b2:    #D1D5DB;
+    --ok:    #10B981;
+    --warn:  #F59E0B;
+    --err:   #EF4444;
+    --grad:  linear-gradient(135deg, #6D28D9, #8B5CF6, #22D3EE);
+    --grad-h:linear-gradient(to right, #6D28D9, #8B5CF6, #22D3EE);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #000;
+    overflow: hidden;
+    width: 100vw; height: 100vh;
+  }
+
+  /* ── SLIDES ─────────────────────────────────────────────────────────── */
+  .deck { width: 100%; height: 100%; position: relative; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 48px 72px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s ease, transform .35s ease;
+    transform: translateX(30px);
+    background: var(--bg1);
+  }
+  .slide.active  { opacity: 1; pointer-events: all; transform: translateX(0); }
+  .slide.out     { opacity: 0; transform: translateX(-30px); }
+
+  /* ── PROGRESS ────────────────────────────────────────────────────────── */
+  .progress {
+    position: fixed; top: 0; left: 0; height: 3px; z-index: 200;
+    background: var(--grad-h);
+    transition: width .4s ease;
+  }
+  .slide-num {
+    position: fixed; top: 16px; right: 24px; z-index: 200;
+    font-size: 12px; color: var(--t4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── NAV ─────────────────────────────────────────────────────────────── */
+  .nav {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%); z-index: 200;
+    display: flex; gap: 10px; align-items: center;
+    background: white; border: 1px solid var(--b1);
+    border-radius: 40px; padding: 8px 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+  .nav button {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--b2); background: none;
+    color: var(--t2); cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .nav button:hover { background: var(--p500); border-color: var(--p500); color: white; }
+  .nav .counter { font-size: 12px; color: var(--t3); min-width: 52px; text-align: center; }
+  .dots { display: flex; gap: 5px; }
+  .dot {
+    width: 6px; height: 6px; border-radius: 3px;
+    background: var(--b2); cursor: pointer; transition: all .2s;
+  }
+  .dot.active { background: var(--p500); width: 16px; }
+
+  /* ── TYPOGRAPHY ─────────────────────────────────────────────────────── */
+  h1 { font-size: clamp(30px,4.5vw,52px); font-weight: 800; line-height: 1.1; color: var(--t1); }
+  h2 { font-size: clamp(20px,3vw,34px);   font-weight: 700; line-height: 1.2; color: var(--t1); }
+  h3 { font-size: clamp(14px,1.8vw,20px); font-weight: 600; color: var(--t1); }
+  p  { font-size: clamp(12px,1.4vw,15px); line-height: 1.6; color: var(--t2); }
+
+  .grad-text {
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── TAGS ────────────────────────────────────────────────────────────── */
+  .tag {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  }
+  .tag-v  { background: #EDE9FE; color: var(--p600); border: 1px solid #DDD6FE; }
+  .tag-c  { background: #ECFEFF; color: var(--s600); border: 1px solid #A5F3FC; }
+  .tag-g  { background: #D1FAE5; color: #065F46;     border: 1px solid #6EE7B7; }
+  .tag-w  { background: #FEF3C7; color: #92400E;     border: 1px solid #FDE68A; }
+  .tag-e  { background: #FEE2E2; color: #991B1B;     border: 1px solid #FECACA; }
+
+  /* ── HEADER GRADIENT (comme les écrans de l'app) ─────────────────────── */
+  .header-grad {
+    background: var(--grad);
+    color: white;
+    border-radius: 20px;
+    padding: 32px 40px;
+    width: 100%;
+  }
+  .header-grad h1, .header-grad h2, .header-grad h3,
+  .header-grad p { color: white; }
+
+  /* ── CARDS ───────────────────────────────────────────────────────────── */
+  .card {
+    background: var(--bg0); border: 1px solid var(--b1);
+    border-radius: 14px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .card-v { background: #F5F3FF; border-color: #DDD6FE; }
+  .card-c { background: #ECFEFF; border-color: #A5F3FC; }
+  .card-g { background: #D1FAE5; border-color: #6EE7B7; }
+  .card-w { background: #FEF3C7; border-color: #FDE68A; }
+  .card-e { background: #FEE2E2; border-color: #FECACA; }
+
+  /* ── LAYOUT ──────────────────────────────────────────────────────────── */
+  .wide   { max-width: 1100px; width: 100%; }
+  .center { text-align: center; align-items: center; }
+  .left   { align-items: flex-start; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; width: 100%; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; width: 100%; }
+
+  .divider {
+    width: 48px; height: 3px; border-radius: 2px;
+    background: var(--grad-h); margin: 12px 0;
+  }
+
+  /* ── LIST STYLES ─────────────────────────────────────────────────────── */
+  ul.checks { list-style: none; }
+  ul.checks li { padding: 6px 0 6px 24px; position: relative; color: var(--t2); font-size: 14px; }
+  ul.checks li::before { content: '✓'; position: absolute; left: 0; color: var(--ok); font-weight: 700; }
+
+  ul.bullets { list-style: none; }
+  ul.bullets li { padding: 5px 0 5px 18px; position: relative; color: var(--t2); font-size: 14px; }
+  ul.bullets li::before { content: '▸'; position: absolute; left: 0; color: var(--p500); }
+  ul.bullets li strong { color: var(--t1); }
+
+  /* ── CODE BLOCK ──────────────────────────────────────────────────────── */
+  .code {
+    background: #1E1B4B; border-left: 3px solid var(--p500);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px; width: 100%;
+    font-family: 'Cascadia Code','Fira Code','Courier New',monospace;
+    font-size: clamp(10px,1.1vw,13px); line-height: 1.7; color: #E2E8F0;
+  }
+  .code .kw  { color: #C4B5FD; }
+  .code .fn  { color: #93C5FD; }
+  .code .str { color: #86EFAC; }
+  .code .cmt { color: #4B5563; font-style: italic; }
+  .code .num { color: #FCA5A5; }
+
+  /* ── LAYER ROW ───────────────────────────────────────────────────────── */
+  .layer {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-radius: 10px;
+    background: var(--bg0); border: 1px solid var(--b1);
+    margin-bottom: 6px;
+  }
+  .lnum {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--grad); color: white;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .lname { font-weight: 600; font-size: 13px; color: var(--t1); flex: 1; }
+  .ldesc { font-size: 11px; color: var(--t3); }
+
+  /* ── FEATURE CARD ────────────────────────────────────────────────────── */
+  .feat {
+    padding: 18px; background: var(--bg0);
+    border: 1px solid var(--b1); border-radius: 12px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .feat:hover { border-color: var(--p500); box-shadow: 0 0 0 3px rgba(139,92,246,.1); }
+  .feat .ico { font-size: 26px; margin-bottom: 8px; }
+  .feat h3   { font-size: 14px; margin-bottom: 5px; }
+  .feat p    { font-size: 11px; color: var(--t3); line-height: 1.5; }
+
+  /* ── TIMELINE ────────────────────────────────────────────────────────── */
+  .tl { display: flex; gap: 14px; margin-bottom: 18px; }
+  .tl-dot {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--p500); margin-top: 4px; flex-shrink: 0;
+    position: relative;
+  }
+  .tl-dot::after {
+    content: ''; position: absolute;
+    left: 4px; top: 11px; width: 2px; height: calc(100% + 10px);
+    background: var(--b1);
+  }
+  .tl:last-child .tl-dot::after { display: none; }
+  .tl h3 { font-size: 14px; margin-bottom: 3px; }
+  .tl p  { font-size: 12px; color: var(--t3); }
+
+  /* ── ARCH BOXES ──────────────────────────────────────────────────────── */
+  .arch-row { display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; }
+  .arch-box {
+    padding: 14px 16px; border-radius: 12px; text-align: center; flex: 1; max-width: 170px;
+    border: 1px solid var(--b1); background: var(--bg0);
+  }
+  .arch-box h3 { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .arch-box p  { font-size: 10px; color: var(--t3); }
+  .arch-arr    { font-size: 20px; color: var(--p500); padding: 0 6px; flex-shrink: 0; }
+
+  /* ── STAT ────────────────────────────────────────────────────────────── */
+  .stat-n { font-size: clamp(32px,4vw,48px); font-weight: 800; color: var(--p500); line-height: 1; }
+  .stat-l { font-size: 11px; color: var(--t3); margin-top: 3px; }
+
+  /* ── BUG CARD ────────────────────────────────────────────────────────── */
+  .bug {
+    padding: 14px 18px; margin-bottom: 10px;
+    background: #FEF2F2; border: 1px solid #FECACA;
+    border-left: 4px solid var(--err); border-radius: 0 10px 10px 0;
+  }
+  .bug-title { font-size: 13px; font-weight: 700; color: #991B1B; margin-bottom: 5px; }
+  .bug-cause { font-size: 11px; color: var(--t3); }
+  .bug-fix   { font-size: 11px; color: #065F46; margin-top: 3px; font-weight: 500; }
+
+  /* ── DEMO STEP ───────────────────────────────────────────────────────── */
+  .demo {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 14px; background: var(--bg0);
+    border: 1px solid var(--b1); border-radius: 10px; margin-bottom: 7px;
+  }
+  .demo-n {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: var(--grad); color: white;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .demo p { font-size: 12px; color: var(--t2); line-height: 1.5; }
+  .demo strong { color: var(--t1); }
+
+  /* ── TECH BADGE ──────────────────────────────────────────────────────── */
+  .tech {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; background: var(--bg0);
+    border: 1px solid var(--b1); border-radius: 10px;
+    font-size: 13px; font-weight: 500; color: var(--t1);
+  }
+  .tech .ico {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    background: #F5F3FF; flex-shrink: 0;
+  }
+
+  /* ── TABLE ───────────────────────────────────────────────────────────── */
+  table.t { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.t th {
+    background: #F5F3FF; color: var(--p600); padding: 9px 12px;
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px;
+    border-bottom: 2px solid #DDD6FE;
+  }
+  table.t td { padding: 8px 12px; border-bottom: 1px solid var(--b1); color: var(--t2); }
+  table.t tr:last-child td { border-bottom: none; }
+  .ok-txt { color: var(--ok); font-weight: 700; }
+
+  /* ── COVER ───────────────────────────────────────────────────────────── */
+  .bg-cover {
+    background: var(--bg0);
+    position: relative; overflow: hidden;
+  }
+  .bg-cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(109,40,217,.06) 0%, rgba(6,182,212,.04) 100%);
+  }
+  .bg-white { background: var(--bg0); }
+  .bg-gray  { background: var(--bg1); }
+  .bg-gray2 { background: var(--bg2); }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="slide-num" id="snum">1 / 18</div>
+
+<div class="deck" id="deck">
+
+  <!-- ══ 1 COVER ══ -->
+  <div class="slide active bg-cover center">
+    <div class="wide" style="position:relative;z-index:1;max-width:760px;">
+      <div class="tag tag-v" style="margin-bottom:20px;">CDA — Concepteur Développeur d'Applications</div>
+      <div class="header-grad" style="margin-bottom:28px;">
+        <h1 style="font-size:clamp(36px,5vw,60px);margin-bottom:12px;">AnimeTracker</h1>
+        <p style="font-size:16px;opacity:.9;">Application mobile full-stack de suivi d'animés</p>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
+        <span class="tag tag-v">React Native</span>
+        <span class="tag tag-c">Node.js</span>
+        <span class="tag tag-v">PostgreSQL</span>
+        <span class="tag tag-c">Redis</span>
+        <span class="tag tag-g">Docker</span>
+        <span class="tag tag-v">TypeScript</span>
+      </div>
+      <div style="border-top:1px solid var(--b1);padding-top:24px;">
+        <p style="font-size:16px;font-weight:700;color:var(--t1);">Antonin CUENOT</p>
+        <p style="font-size:13px;color:var(--t3);margin-top:4px;">Soutenance CDA · Juin 2026 · M2i Formation</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2 SOMMAIRE ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:14px;">Plan</div>
+      <h2 style="margin-bottom:24px;">Sommaire</h2>
+      <div class="grid-2" style="gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div class="layer"><div class="lnum">1</div><div class="lname">Présentation personnelle</div></div>
+          <div class="layer"><div class="lnum">2</div><div class="lname">Contexte du projet</div></div>
+          <div class="layer"><div class="lnum">3</div><div class="lname">Organisation & méthode</div></div>
+          <div class="layer"><div class="lnum">4</div><div class="lname">Stack technique</div></div>
+          <div class="layer"><div class="lnum">5</div><div class="lname">Architecture en couches</div></div>
+          <div class="layer"><div class="lnum">6</div><div class="lname">Fonctionnalités</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div class="layer"><div class="lnum">7</div><div class="lname">Maquettes & UX</div></div>
+          <div class="layer"><div class="lnum">8</div><div class="lname">Sécurité applicative</div></div>
+          <div class="layer"><div class="lnum">9</div><div class="lname">Base de données</div></div>
+          <div class="layer"><div class="lnum">10</div><div class="lname">Panel d'administration</div></div>
+          <div class="layer"><div class="lnum">11</div><div class="lname">Tests</div></div>
+          <div class="layer"><div class="lnum" style="background:var(--s500);">12+</div><div class="lname">Code · Démo · Conclusion</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3 PRÉSENTATION ══ -->
+  <div class="slide bg-white">
+    <div class="wide grid-2" style="align-items:center;gap:48px;">
+      <div>
+        <div class="tag tag-c" style="margin-bottom:14px;">Qui suis-je ?</div>
+        <h2 style="margin-bottom:10px;">Antonin CUENOT</h2>
+        <div class="divider"></div>
+        <ul class="checks" style="margin-top:18px;">
+          <li><strong>DWWM obtenu en 2024</strong> — site web e-commerce</li>
+          <li><strong>CDA 2025-2026</strong> — M2i Formation</li>
+          <li>Stack principale : JavaScript / TypeScript full-stack</li>
+          <li>Premier projet <strong>mobile natif</strong></li>
+          <li>Passionné d'animés → sujet naturel</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="card card-v">
+          <p style="font-size:11px;color:var(--t3);margin-bottom:4px;">Objectif CDA</p>
+          <p style="font-weight:600;color:var(--p700);">Passer du web au mobile natif<br>avec une architecture full-stack sécurisée</p>
+        </div>
+        <div class="card card-c">
+          <p style="font-size:11px;color:var(--t3);margin-bottom:4px;">Technologies maîtrisées</p>
+          <p style="font-weight:600;color:var(--s600);">React Native · Node.js · PostgreSQL<br>Docker · JWT · Redux Toolkit</p>
+        </div>
+        <div class="card card-w">
+          <p style="font-size:11px;color:var(--t3);margin-bottom:4px;">Durée du projet</p>
+          <p style="font-weight:700;color:#92400E;">3 mois de développement</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 4 CONTEXTE ══ -->
+  <div class="slide bg-gray center">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:12px;">Contexte</div>
+      <h2 style="margin-bottom:8px;">Qu'est-ce qu'<span class="grad-text">AnimeTracker</span> ?</h2>
+      <p style="color:var(--t3);max-width:620px;margin:0 auto 28px;font-size:14px;">Application mobile permettant aux fans d'animés de gérer leur bibliothèque, partager leurs avis et discuter en communauté</p>
+      <div class="grid-4" style="gap:12px;margin-bottom:24px;">
+        <div class="feat"><div class="ico">📚</div><h3>Bibliothèque</h3><p>Suivre ses animés avec statut et épisodes</p></div>
+        <div class="feat"><div class="ico">⭐</div><h3>Avis</h3><p>Noter et commenter (public ou privé)</p></div>
+        <div class="feat"><div class="ico">💬</div><h3>Messagerie</h3><p>Messages privés entre membres</p></div>
+        <div class="feat"><div class="ico">👥</div><h3>Groupes</h3><p>Discussions communautaires par animé</p></div>
+      </div>
+      <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;padding:20px 32px;background:var(--bg0);border:1px solid var(--b1);border-radius:16px;">
+        <div style="text-align:center;"><div class="stat-n">54</div><p class="stat-l">endpoints API</p></div>
+        <div style="text-align:center;"><div class="stat-n">12</div><p class="stat-l">tables BDD</p></div>
+        <div style="text-align:center;"><div class="stat-n">38</div><p class="stat-l">tests Jest</p></div>
+        <div style="text-align:center;"><div class="stat-n">8</div><p class="stat-l">fonctionnalités</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 5 ORGANISATION ══ -->
+  <div class="slide bg-white left">
+    <div class="wide">
+      <div class="tag tag-w" style="margin-bottom:14px;">Organisation</div>
+      <h2 style="margin-bottom:28px;">Méthode de travail</h2>
+      <div class="grid-2" style="gap:48px;align-items:start;">
+        <div>
+          <h3 style="color:var(--p600);margin-bottom:16px;font-size:14px;">Approche itérative</h3>
+          <div class="tl"><div class="tl-dot"></div><div><h3>Conception</h3><p>Maquettes, MCD, user stories, architecture</p></div></div>
+          <div class="tl"><div class="tl-dot"></div><div><h3>Développement backend</h3><p>API REST, BDD, auth, tests Jest</p></div></div>
+          <div class="tl"><div class="tl-dot"></div><div><h3>Développement frontend</h3><p>Écrans React Native, Redux, navigation</p></div></div>
+          <div class="tl"><div class="tl-dot" style="background:var(--s500);"></div><div><h3>Panel admin + sécurité</h3><p>RBAC, modération, 9 couches de sécurité</p></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <h3 style="color:var(--p600);margin-bottom:4px;font-size:14px;">Outils</h3>
+          <div class="tech"><div class="ico">📋</div><div><div style="font-size:13px;font-weight:600;">Git / GitHub</div><div style="font-size:11px;color:var(--t3);">Versionning, historique</div></div></div>
+          <div class="tech"><div class="ico">🐳</div><div><div style="font-size:13px;font-weight:600;">Docker Compose</div><div style="font-size:11px;color:var(--t3);">PostgreSQL + Redis conteneurisés</div></div></div>
+          <div class="tech"><div class="ico">💙</div><div><div style="font-size:13px;font-weight:600;">VS Code + ESLint</div><div style="font-size:11px;color:var(--t3);">IDE + linter TypeScript</div></div></div>
+          <div class="tech"><div class="ico">📱</div><div><div style="font-size:13px;font-weight:600;">Émulateur Android</div><div style="font-size:11px;color:var(--t3);">Tests sur Android Studio</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 6 STACK ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:14px;">Stack technique</div>
+      <h2 style="margin-bottom:24px;">Technologies utilisées</h2>
+      <div class="grid-3" style="gap:16px;">
+        <div class="card card-c">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--s600);margin-bottom:12px;font-weight:700;">📱 Frontend Mobile</p>
+          <ul class="bullets">
+            <li><strong>React Native + Expo</strong><br><span style="font-size:11px;color:var(--t3);">1 codebase → Android + iOS</span></li>
+            <li><strong>TypeScript</strong><br><span style="font-size:11px;color:var(--t3);">Erreurs à la compilation</span></li>
+            <li><strong>Redux Toolkit</strong><br><span style="font-size:11px;color:var(--t3);">8 slices, state centralisé</span></li>
+            <li><strong>Axios + intercepteurs</strong><br><span style="font-size:11px;color:var(--t3);">JWT automatique sur chaque req</span></li>
+          </ul>
+        </div>
+        <div class="card card-v">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--p600);margin-bottom:12px;font-weight:700;">⚙️ Backend API REST</p>
+          <ul class="bullets">
+            <li><strong>Node.js + Express</strong><br><span style="font-size:11px;color:var(--t3);">Event-loop non bloquant</span></li>
+            <li><strong>TypeScript</strong><br><span style="font-size:11px;color:var(--t3);">Même langage front + back</span></li>
+            <li><strong>Sequelize ORM</strong><br><span style="font-size:11px;color:var(--t3);">Requêtes paramétrées</span></li>
+            <li><strong>Zod</strong><br><span style="font-size:11px;color:var(--t3);">Validation données entrantes</span></li>
+          </ul>
+        </div>
+        <div class="card card-g">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#065F46;margin-bottom:12px;font-weight:700;">🗄️ Infrastructure</p>
+          <ul class="bullets">
+            <li><strong>PostgreSQL 15</strong><br><span style="font-size:11px;color:var(--t3);">BDD relationnelle, Docker</span></li>
+            <li><strong>Redis 7 (NoSQL)</strong><br><span style="font-size:11px;color:var(--t3);">Clé/valeur — blacklist JWT</span></li>
+            <li><strong>Docker Compose</strong><br><span style="font-size:11px;color:var(--t3);">Environnement reproductible</span></li>
+            <li><strong>Jikan API</strong><br><span style="font-size:11px;color:var(--t3);">Données animés MyAnimeList</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 7 ARCHITECTURE ══ -->
+  <div class="slide bg-white center">
+    <div class="wide">
+      <div class="tag tag-c" style="margin-bottom:14px;">Architecture</div>
+      <h2 style="margin-bottom:8px;">Application en <span class="grad-text">couches</span></h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:24px;">Pattern Controllers / Services — SQL + NoSQL</p>
+      <div class="arch-row" style="margin-bottom:24px;">
+        <div class="arch-box" style="border-color:#A5F3FC;background:#ECFEFF;"><h3 style="color:var(--s600);">📱 React Native</h3><p>UI + Redux<br>Navigation</p></div>
+        <div class="arch-arr">⟺</div>
+        <div class="arch-box" style="border-color:#DDD6FE;background:#F5F3FF;"><h3 style="color:var(--p600);">⚙️ Express API</h3><p>Routes<br>Controllers</p></div>
+        <div class="arch-arr">⟺</div>
+        <div class="arch-box" style="border-color:#6EE7B7;background:#D1FAE5;"><h3 style="color:#065F46;">🧠 Services</h3><p>Logique<br>métier</p></div>
+        <div class="arch-arr">⟺</div>
+        <div class="arch-box" style="border-color:#FDE68A;background:#FEF3C7;"><h3 style="color:#92400E;">🗄️ PostgreSQL</h3><p>12 tables<br>Sequelize</p></div>
+        <div class="arch-arr">⟺</div>
+        <div class="arch-box" style="border-color:#FECACA;background:#FEE2E2;"><h3 style="color:#991B1B;">⚡ Redis</h3><p>Cache<br>Blacklist JWT</p></div>
+      </div>
+      <div class="grid-3" style="gap:12px;">
+        <div class="card"><p style="font-size:10px;color:var(--p600);font-weight:700;margin-bottom:6px;">CONTROLLERS / SERVICES</p><p style="font-size:12px;">Controller = HTTP · Service = métier<br>Testable indépendamment</p></div>
+        <div class="card"><p style="font-size:10px;color:var(--s600);font-weight:700;margin-bottom:6px;">SÉPARATION FRONT / BACK</p><p style="font-size:12px;">API REST stateless<br>Frontend consomme l'API</p></div>
+        <div class="card"><p style="font-size:10px;color:#065F46;font-weight:700;margin-bottom:6px;">SQL + NoSQL</p><p style="font-size:12px;">PostgreSQL = relationnel<br>Redis = cache mémoire</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 8 FONCTIONNALITÉS ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-g" style="margin-bottom:14px;">Fonctionnalités</div>
+      <h2 style="margin-bottom:20px;">8 fonctionnalités implémentées</h2>
+      <div class="grid-4" style="gap:12px;">
+        <div class="feat"><div class="ico">🔐</div><h3>Auth</h3><p>JWT + bcrypt + blacklist Redis</p></div>
+        <div class="feat"><div class="ico">📚</div><h3>Bibliothèque</h3><p>4 statuts, Jikan API</p></div>
+        <div class="feat"><div class="ico">⭐</div><h3>Avis</h3><p>Public/privé, likes, UPSERT</p></div>
+        <div class="feat"><div class="ico">💬</div><h3>Messagerie</h3><p>3 tables, vérif. participant</p></div>
+        <div class="feat"><div class="ico">👥</div><h3>Groupes</h3><p>1 groupe / animé, auto-créé</p></div>
+        <div class="feat"><div class="ico">👤</div><h3>Social</h3><p>Follow/unfollow, CHECK SQL</p></div>
+        <div class="feat"><div class="ico">📊</div><h3>Profil</h3><p>Stats, RGPD, export données</p></div>
+        <div class="feat" style="border-color:#DDD6FE;background:#F5F3FF;">
+          <div class="ico">🛡️</div><h3 style="color:var(--p700);">Panel Admin</h3><p style="color:var(--p500);">Stats, modération, RBAC</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 9 MAQUETTES ══ -->
+  <div class="slide bg-white center">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:12px;">UX / UI</div>
+      <h2 style="margin-bottom:6px;">Maquettes & Design</h2>
+      <p style="color:var(--t3);margin-bottom:24px;font-size:13px;">Thème clair / sombre · Palette violet-cyan · Navigation fluide</p>
+      <div style="display:flex;gap:16px;justify-content:center;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;">
+        <!-- Login -->
+        <div style="text-align:center;">
+          <div style="background:white;border:1px solid var(--b1);border-radius:18px;padding:14px;width:115px;height:195px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+            <div style="background:var(--grad);width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;">🔐</div>
+            <div style="width:80px;height:8px;background:var(--bg2);border-radius:4px;"></div>
+            <div style="width:80px;height:8px;background:var(--bg2);border-radius:4px;"></div>
+            <div style="width:80px;height:28px;background:var(--grad);border-radius:8px;"></div>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;">Connexion</p>
+        </div>
+        <!-- Home -->
+        <div style="text-align:center;">
+          <div style="background:var(--bg1);border:1px solid var(--b1);border-radius:18px;overflow:hidden;width:125px;height:215px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+            <div style="background:var(--grad);height:60px;display:flex;align-items:center;padding:0 12px;">
+              <span style="color:white;font-size:12px;font-weight:700;">Accueil</span>
+            </div>
+            <div style="padding:10px;display:flex;flex-direction:column;gap:6px;">
+              <div style="background:white;height:36px;border-radius:8px;border:1px solid var(--b1);"></div>
+              <div style="background:white;height:36px;border-radius:8px;border:1px solid var(--b1);"></div>
+              <div style="background:white;height:36px;border-radius:8px;border:1px solid var(--b1);"></div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;">Accueil</p>
+        </div>
+        <!-- Detail — highlighted -->
+        <div style="text-align:center;">
+          <div style="background:var(--bg1);border:2px solid var(--p500);border-radius:18px;overflow:hidden;width:135px;height:235px;box-shadow:0 6px 24px rgba(139,92,246,.2);">
+            <div style="background:var(--grad);height:80px;display:flex;align-items:flex-end;padding:0 12px 10px;">
+              <span style="color:white;font-size:11px;font-weight:700;">Détail Animé</span>
+            </div>
+            <div style="padding:10px;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;gap:6px;">
+                <div style="background:#EDE9FE;height:22px;width:40px;border-radius:6px;"></div>
+                <div style="background:#CFFAFE;height:22px;width:50px;border-radius:6px;"></div>
+              </div>
+              <div style="background:var(--bg2);height:6px;border-radius:3px;"></div>
+              <div style="background:var(--bg2);height:6px;border-radius:3px;width:70%;"></div>
+              <div style="background:var(--grad);height:28px;border-radius:8px;margin-top:4px;"></div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--p600);margin-top:8px;font-weight:600;">Écran clé</p>
+        </div>
+        <!-- Library -->
+        <div style="text-align:center;">
+          <div style="background:var(--bg1);border:1px solid var(--b1);border-radius:18px;overflow:hidden;width:125px;height:215px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+            <div style="background:var(--grad);height:50px;display:flex;align-items:center;padding:0 12px;">
+              <span style="color:white;font-size:12px;font-weight:700;">Bibliothèque</span>
+            </div>
+            <div style="padding:8px;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+              <div style="background:#D1FAE5;height:18px;width:52px;border-radius:4px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#065F46;font-weight:600;">Terminé</div>
+              <div style="background:#FEF3C7;height:18px;width:50px;border-radius:4px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#92400E;font-weight:600;">En cours</div>
+              <div style="background:#DBEAFE;height:18px;width:44px;border-radius:4px;font-size:9px;display:flex;align-items:center;justify-content:center;color:#1E40AF;font-weight:600;">À voir</div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;">Bibliothèque</p>
+        </div>
+        <!-- Profile -->
+        <div style="text-align:center;">
+          <div style="background:var(--bg1);border:1px solid var(--b1);border-radius:18px;overflow:hidden;width:115px;height:195px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+            <div style="background:var(--grad);height:70px;display:flex;align-items:center;justify-content:center;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.3);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:16px;color:white;font-weight:700;">A</div>
+            </div>
+            <div style="padding:8px;display:flex;flex-direction:column;gap:4px;">
+              <div style="background:var(--bg2);height:6px;border-radius:3px;"></div>
+              <div style="background:var(--bg2);height:6px;border-radius:3px;width:60%;"></div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin-top:8px;">Profil</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <span class="tag tag-v">React Navigation</span>
+        <span class="tag tag-c">ThemeContext clair/sombre</span>
+        <span class="tag tag-g">Linear Gradient</span>
+        <span class="tag tag-w">Safe Area Insets</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 10 SÉCURITÉ ══ -->
+  <div class="slide bg-gray left">
+    <div class="wide">
+      <div class="tag tag-e" style="margin-bottom:12px;">Sécurité</div>
+      <h2 style="margin-bottom:6px;">9 couches de protection</h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:18px;">Chaque requête traverse toutes ces couches dans l'ordre</p>
+      <div class="grid-2" style="gap:8px;">
+        <div><div class="layer"><div class="lnum" style="background:#DC2626;">1</div><div class="lname">Helmet</div><div class="ldesc">Headers HTTP (CSP, HSTS, clickjacking)</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:#D97706;">2</div><div class="lname">Rate Limiting</div><div class="ldesc">100 req / 15 min / IP — anti force brute</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--p600);">3</div><div class="lname">Payload Limit</div><div class="ldesc">Body max 10 ko — anti saturation</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--s600);">4</div><div class="lname">sanitizeBody</div><div class="ldesc">Échappement HTML — anti XSS stocké</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--ok);">5</div><div class="lname">Zod</div><div class="ldesc">Validation typée — anti injection sémantique</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--p600);">6</div><div class="lname">authenticate</div><div class="ldesc">JWT + blacklist Redis — anti replay token</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:#DC2626;">7</div><div class="lname">requireRole (RBAC)</div><div class="ldesc">Vérification rôle — anti privilege escalation</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--s600);">8</div><div class="lname">Sequelize ORM</div><div class="ldesc">Requêtes paramétrées — anti SQL injection</div></div></div>
+        <div><div class="layer"><div class="lnum" style="background:var(--ok);">9</div><div class="lname">UUID</div><div class="ldesc">Clés non-prédictibles — anti énumération</div></div></div>
+        <div class="card card-v" style="display:flex;align-items:center;gap:10px;padding:12px 14px;">
+          <span style="font-size:22px;">🔑</span>
+          <div><p style="font-size:12px;font-weight:600;color:var(--p700);">bcrypt coût 10</p><p style="font-size:11px;color:var(--t3);">Mots de passe hachés, irréversibles</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 11 BDD ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-g" style="margin-bottom:12px;">Base de données</div>
+      <h2 style="margin-bottom:6px;">Schéma relationnel — 12 tables</h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:18px;">PostgreSQL 15 · UUID · ENUM · Contraintes CHECK · Triggers updated_at</p>
+      <div class="grid-3" style="gap:12px;">
+        <div>
+          <p style="font-size:10px;color:var(--s600);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px;">Utilisateurs</p>
+          <div class="code" style="font-size:10px;">
+<span class="kw">user</span> (id_user, email, password,<br>
+      pseudo, role, is_suspended)<br>
+<span class="cmt">-- role: USER | MODERATEUR | ADMIN</span>
+          </div>
+          <p style="font-size:10px;color:var(--p600);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:10px 0 8px;">Social</p>
+          <div class="code" style="font-size:10px;">
+<span class="kw">follow</span> (id_follower, id_following)<br>
+<span class="cmt">-- CHECK: follower ≠ following</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:10px;color:var(--warn);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px;">Bibliothèque & Avis</p>
+          <div class="code" style="font-size:10px;">
+<span class="kw">user_anime</span> (status, episodes_watched)<br>
+<span class="cmt">-- status: A_VOIR | EN_COURS | ...</span><br>
+<span class="cmt">-- UNIQUE(id_user, id_anime)</span><br><br>
+<span class="kw">review</span> (rating, comment, visibility)<br>
+<span class="cmt">-- visibility: PUBLIC | PRIVE</span><br>
+<span class="cmt">-- UNIQUE(id_user, id_anime)</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:10px;color:var(--p600);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:8px;">Messagerie & Groupes</p>
+          <div class="code" style="font-size:10px;">
+<span class="kw">conversation</span> + participants<br>
+<span class="kw">message</span> (content, is_read)<br><br>
+<span class="kw">group</span> (type: OFFICIEL | PERSONNALISE)<br>
+<span class="kw">group_member</span> + <span class="kw">group_message</span><br>
+<span class="cmt">-- deleted_at (soft-delete modération)</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="tag tag-c">UUID non-prédictibles</span>
+        <span class="tag tag-g">init.sql manuel</span>
+        <span class="tag tag-v">Triggers updated_at auto</span>
+        <span class="tag tag-w">Index de performance</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 12 PANEL ADMIN ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:12px;">Nouveauté v1.1</div>
+      <h2 style="margin-bottom:20px;">Panel d'<span class="grad-text">administration</span></h2>
+      <div class="grid-2" style="gap:20px;align-items:start;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card card-e">
+            <p style="font-size:10px;color:#991B1B;font-weight:700;margin-bottom:8px;">ACCÈS SÉCURISÉ — RBAC</p>
+            <div class="code" style="font-size:11px;">
+router.use(authenticate,<br>
+           requireRole(<span class="str">'ADMIN'</span>));<br>
+<span class="cmt">// 403 si role ≠ ADMIN</span>
+            </div>
+          </div>
+          <div class="card">
+            <p style="font-size:10px;color:var(--p600);font-weight:700;margin-bottom:10px;">11 ENDPOINTS /api/admin/*</p>
+            <ul class="bullets" style="font-size:12px;">
+              <li>GET /stats → 6 compteurs</li>
+              <li>PATCH /users/:id/role</li>
+              <li>PATCH /users/:id/suspend</li>
+              <li>DELETE /reviews/:id</li>
+              <li>DELETE /group-messages/:id</li>
+            </ul>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="card" style="text-align:center;"><div style="font-size:22px;margin-bottom:6px;">📊</div><p style="font-size:13px;font-weight:600;">Stats</p><p style="font-size:11px;color:var(--t3);">Users, reviews, groupes, messages</p></div>
+          <div class="card" style="text-align:center;"><div style="font-size:22px;margin-bottom:6px;">👤</div><p style="font-size:13px;font-weight:600;">Utilisateurs</p><p style="font-size:11px;color:var(--t3);">Rôle, suspension, suppression</p></div>
+          <div class="card" style="text-align:center;"><div style="font-size:22px;margin-bottom:6px;">⭐</div><p style="font-size:13px;font-weight:600;">Avis</p><p style="font-size:11px;color:var(--t3);">Visibilité, suppression</p></div>
+          <div class="card" style="text-align:center;"><div style="font-size:22px;margin-bottom:6px;">💬</div><p style="font-size:13px;font-weight:600;">Messages groupes</p><p style="font-size:11px;color:var(--t3);">Soft-delete avec audit</p></div>
+          <div class="card card-g" style="grid-column:span 2;text-align:center;padding:12px;">
+            <p style="font-size:12px;color:#065F46;font-weight:600;">✓ MP jamais visibles — privacy by design</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 13 TESTS ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-g" style="margin-bottom:12px;">Tests</div>
+      <h2 style="margin-bottom:20px;">Stratégie de test</h2>
+      <div class="grid-2" style="gap:24px;align-items:start;">
+        <div>
+          <h3 style="color:var(--p600);margin-bottom:12px;font-size:14px;">🤖 Jest automatisés — 38 tests</h3>
+          <table class="t">
+            <thead><tr><th>Fichier</th><th>Tests</th><th>Résultat</th></tr></thead>
+            <tbody>
+              <tr><td>authService.test.ts</td><td>15 unitaires</td><td class="ok-txt">✓ PASS</td></tr>
+              <tr><td>userService.test.ts</td><td>12 unitaires</td><td class="ok-txt">✓ PASS</td></tr>
+              <tr><td>auth.test.ts</td><td>11 intégration</td><td class="ok-txt">✓ PASS</td></tr>
+            </tbody>
+          </table>
+          <div class="card card-g" style="margin-top:12px;">
+            <p style="font-size:13px;color:#065F46;font-weight:600;">38/38 — 100% — ~4 secondes</p>
+            <p style="font-size:11px;color:var(--t3);margin-top:3px;">BDD et Redis mockés (jest.mock)</p>
+          </div>
+        </div>
+        <div>
+          <h3 style="color:var(--s600);margin-bottom:12px;font-size:14px;">📱 Tests manuels — 41 cas</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">7</span><p style="font-size:11px;color:var(--t3);">Auth</p></div>
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">8</span><p style="font-size:11px;color:var(--t3);">Bibliothèque</p></div>
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">7</span><p style="font-size:11px;color:var(--t3);">Avis</p></div>
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">6</span><p style="font-size:11px;color:var(--t3);">Messagerie</p></div>
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">5</span><p style="font-size:11px;color:var(--t3);">Social</p></div>
+            <div class="card" style="padding:10px;text-align:center;"><span style="color:var(--ok);font-weight:700;font-size:17px;">8</span><p style="font-size:11px;color:var(--t3);">Admin+Profil</p></div>
+          </div>
+          <span class="tag tag-g">✓ 41/41 — Émulateur Android</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 14 BUGS ══ -->
+  <div class="slide bg-gray left">
+    <div class="wide">
+      <div class="tag tag-e" style="margin-bottom:12px;">Résolution de problèmes</div>
+      <h2 style="margin-bottom:18px;">4 bugs résolus — démarche structurée</h2>
+      <div class="bug"><div class="bug-title">🔴 Avis privé disparaît après navigation</div><div class="bug-cause">Cause : GET /reviews ne retourne que les avis PUBLIC — logique correcte pour les autres utilisateurs</div><div class="bug-fix">✅ Solution : endpoint dédié GET /animes/:id/my-review — retourne l'avis de l'utilisateur connecté quelle que soit sa visibilité</div></div>
+      <div class="bug"><div class="bug-title">🔴 Bouton Follow toujours désactivé</div><div class="bug-cause">Cause : selectIsFollowing lisait state.social.following au lieu de state.social.followers — inversion logique</div><div class="bug-fix">✅ Solution : corriger le selector Redux pour pointer vers le bon tableau du store</div></div>
+      <div class="bug"><div class="bug-title">🔴 Appartenance groupe perdue au redémarrage</div><div class="bug-cause">Cause : Redux en mémoire — isMember non rechargé au reload de l'app</div><div class="bug-fix">✅ Solution : checkAnimeGroup() au montage → GET /groups/anime/:id retourne l'état réel en BDD</div></div>
+      <div class="bug"><div class="bug-title">🔴 Hot-reload mort sur Windows + Docker</div><div class="bug-cause">Cause : Docker Desktop ne propage pas les événements inotify de Windows vers le conteneur Linux</div><div class="bug-fix">✅ Solution : backend lancé en local (npm run dev), PostgreSQL + Redis restent dans Docker</div></div>
+    </div>
+  </div>
+
+  <!-- ══ 15 CODE ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:12px;">Explication de code</div>
+      <h2 style="margin-bottom:18px;">Middleware d'authentification JWT</h2>
+      <div class="grid-2" style="gap:24px;align-items:start;">
+        <div class="code">
+<span class="kw">export async function</span> <span class="fn">authenticate</span>(req, res, next) {<br>
+  <span class="cmt">// 1. Extraire le token du header</span><br>
+  <span class="kw">const</span> token = req.headers.authorization<br>
+    ?.replace(<span class="str">'Bearer '</span>, <span class="str">''</span>);<br>
+  <span class="kw">if</span> (!token)<br>
+    <span class="kw">throw new</span> <span class="fn">AppError</span>(<span class="num">401</span>, <span class="str">'Token manquant'</span>);<br><br>
+  <span class="cmt">// 2. Blacklist Redis (logout)</span><br>
+  <span class="kw">const</span> bl = <span class="kw">await</span><br>
+    redis.<span class="fn">exists</span>(<span class="str">`blacklist:${token}`</span>);<br>
+  <span class="kw">if</span> (bl)<br>
+    <span class="kw">throw new</span> <span class="fn">AppError</span>(<span class="num">401</span>, <span class="str">'Token révoqué'</span>);<br><br>
+  <span class="cmt">// 3. Signature + expiration</span><br>
+  req.user = jwt.<span class="fn">verify</span>(token, JWT_SECRET);<br>
+  <span class="fn">next</span>();<br>
+}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <h3 style="color:var(--p600);margin-bottom:6px;font-size:14px;">Pourquoi ce design ?</h3>
+          <div class="card card-c" style="padding:14px;"><p style="font-size:11px;font-weight:700;color:var(--s600);margin-bottom:4px;">Header Authorization</p><p style="font-size:12px;">Standard REST · Mobile-friendly · Pas de cookies</p></div>
+          <div class="card card-w" style="padding:14px;"><p style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:4px;">Blacklist Redis</p><p style="font-size:12px;">10-100x plus rapide que SQL · TTL natif auto-expire</p></div>
+          <div class="card card-g" style="padding:14px;"><p style="font-size:11px;font-weight:700;color:#065F46;margin-bottom:4px;">jwt.verify()</p><p style="font-size:12px;">Vérifie signature + expiration · Stateless</p></div>
+          <div class="card card-v" style="padding:14px;"><p style="font-size:11px;font-weight:700;color:var(--p700);margin-bottom:4px;">Composabilité</p><p style="font-size:12px;">authenticate + requireRole('ADMIN') = RBAC en 1 ligne</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 16 DÉMO ══ -->
+  <div class="slide bg-gray center">
+    <div class="wide">
+      <div class="tag tag-c" style="margin-bottom:12px;">Démonstration</div>
+      <h2 style="margin-bottom:20px;">Scénario de démo</h2>
+      <div class="grid-2" style="gap:20px;text-align:left;">
+        <div>
+          <h3 style="color:var(--p600);margin-bottom:10px;font-size:13px;">🔵 Parcours utilisateur</h3>
+          <div class="demo"><div class="demo-n">1</div><p><strong>Register</strong> → créer un compte</p></div>
+          <div class="demo"><div class="demo-n">2</div><p><strong>Rechercher</strong> "Attack on Titan" → ajouter à la bibliothèque EN_COURS</p></div>
+          <div class="demo"><div class="demo-n">3</div><p><strong>Écrire un avis</strong> 9.5/10 — changer de PRIVE à PUBLIC</p></div>
+          <div class="demo"><div class="demo-n">4</div><p><strong>Rejoindre le groupe</strong> AoT → envoyer un message</p></div>
+          <div class="demo"><div class="demo-n">5</div><p><strong>Suivre</strong> BobSenpai → voir son profil</p></div>
+        </div>
+        <div>
+          <h3 style="color:#991B1B;margin-bottom:10px;font-size:13px;">🛡️ Parcours admin</h3>
+          <div class="demo"><div class="demo-n" style="background:var(--err);">6</div><p><strong>Login admin</strong> → bouton "Panneau Admin" dans le profil</p></div>
+          <div class="demo"><div class="demo-n" style="background:var(--err);">7</div><p><strong>Stats</strong> → voir les 6 compteurs en temps réel</p></div>
+          <div class="demo"><div class="demo-n" style="background:var(--err);">8</div><p><strong>Modérer</strong> un message de groupe (soft-delete)</p></div>
+          <div class="demo"><div class="demo-n" style="background:var(--err);">9</div><p><strong>Changer</strong> visibilité d'un avis PUBLIC → PRIVE</p></div>
+          <div class="demo"><div class="demo-n" style="background:var(--err);">10</div><p><strong>Suspendre</strong> un utilisateur 7 jours</p></div>
+        </div>
+      </div>
+      <div class="card card-w" style="margin-top:14px;text-align:center;padding:12px;">
+        <p style="font-size:12px;color:#92400E;">⚠️ Données pré-chargées · AliceOtaku, BobSenpai, CharlieWeeb, SakuraChan · mot de passe : <strong>Test1234</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 17 AMÉLIORATIONS ══ -->
+  <div class="slide bg-white center">
+    <div class="wide">
+      <div class="tag tag-w" style="margin-bottom:12px;">Rétrospective</div>
+      <h2 style="margin-bottom:24px;">Axes d'amélioration — <span class="grad-text">v2</span></h2>
+      <div class="grid-3" style="gap:14px;">
+        <div class="card card-c"><div style="font-size:26px;margin-bottom:8px;">🔄</div><h3 style="font-size:14px;margin-bottom:6px;">Refresh Token</h3><p style="font-size:12px;">Éviter les déconnexions forcées à 7 jours</p></div>
+        <div class="card card-v"><div style="font-size:26px;margin-bottom:8px;">🔧</div><h3 style="font-size:14px;margin-bottom:6px;">CI/CD GitHub Actions</h3><p style="font-size:12px;">Tests automatiques à chaque push, déploiement Railway</p></div>
+        <div class="card card-g"><div style="font-size:26px;margin-bottom:8px;">⚡</div><h3 style="font-size:14px;margin-bottom:6px;">Temps réel — Socket.IO</h3><p style="font-size:12px;">Messages instantanés (actuellement mode pull)</p></div>
+        <div class="card"><div style="font-size:26px;margin-bottom:8px;">🧪</div><h3 style="font-size:14px;margin-bottom:6px;">Tests d'intégration</h3><p style="font-size:12px;">Couvrir bibliothèque, messagerie, groupes</p></div>
+        <div class="card"><div style="font-size:26px;margin-bottom:8px;">📊</div><h3 style="font-size:14px;margin-bottom:6px;">Prisma ORM</h3><p style="font-size:12px;">Meilleur typage TypeScript, migrations versionnées</p></div>
+        <div class="card"><div style="font-size:26px;margin-bottom:8px;">👥</div><h3 style="font-size:14px;margin-bottom:6px;">Rôle Modérateur</h3><p style="font-size:12px;">Déléguer la modération sans accès admin complet</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 18 CONCLUSION ══ -->
+  <div class="slide bg-gray center">
+    <div class="wide" style="max-width:820px;">
+      <div class="header-grad" style="margin-bottom:24px;">
+        <div class="tag" style="background:rgba(255,255,255,.2);color:white;border:1px solid rgba(255,255,255,.3);margin-bottom:16px;">Conclusion</div>
+        <h2 style="margin-bottom:8px;">Ce que ce projet m'a apporté</h2>
+        <p style="opacity:.85;font-size:14px;">De la conception à la modération — architecture full-stack, sécurité applicative, mobile natif</p>
+      </div>
+      <div class="grid-3" style="gap:12px;margin-bottom:20px;">
+        <div class="card" style="text-align:center;"><div style="font-size:24px;margin-bottom:6px;">📱</div><p style="font-size:13px;font-weight:600;color:var(--t1);">1er mobile natif</p><p style="font-size:11px;color:var(--t3);margin-top:4px;">React Native — de zéro à l'app</p></div>
+        <div class="card" style="text-align:center;"><div style="font-size:24px;margin-bottom:6px;">🔒</div><p style="font-size:13px;font-weight:600;color:var(--t1);">Sécurité applicative</p><p style="font-size:11px;color:var(--t3);margin-top:4px;">9 couches — vecteurs d'attaque</p></div>
+        <div class="card" style="text-align:center;"><div style="font-size:24px;margin-bottom:6px;">🏗️</div><p style="font-size:13px;font-weight:600;color:var(--t1);">Architecture full-stack</p><p style="font-size:11px;color:var(--t3);margin-top:4px;">Couches, SQL + NoSQL</p></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;">
+        <span class="tag tag-c">54 endpoints</span>
+        <span class="tag tag-v">12 tables</span>
+        <span class="tag tag-g">38 tests</span>
+        <span class="tag tag-w">9 couches sécurité</span>
+        <span class="tag tag-v">8 fonctionnalités</span>
+      </div>
+      <h3 style="color:var(--p600);font-size:20px;">Merci pour votre attention</h3>
+      <p style="color:var(--t3);margin-top:6px;font-size:14px;">Je suis prêt à répondre à vos questions.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── NAV ── -->
+<div class="nav">
+  <button onclick="prev()" title="← Précédent">‹</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="ctr">1 / 18</span>
+  <button onclick="next()" title="→ Suivant">›</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const N = slides.length;
+let cur = 0;
+
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i===0?' active':'');
+  d.onclick = () => go(i);
+  dotsEl.appendChild(d);
+});
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('out');
+  const prev = cur;
+  cur = Math.max(0, Math.min(n, N-1));
+  setTimeout(() => slides[prev].classList.remove('out'), 350);
+  slides[cur].classList.add('active');
+  update();
+}
+function next() { if (cur < N-1) go(cur+1); }
+function prev() { if (cur > 0)   go(cur-1); }
+
+function update() {
+  document.getElementById('progress').style.width = ((cur+1)/N*100)+'%';
+  document.getElementById('ctr').textContent = (cur+1)+' / '+N;
+  document.getElementById('snum').textContent = (cur+1)+' / '+N;
+  document.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key===' ') { e.preventDefault(); next(); }
+  if (e.key==='ArrowLeft')               { e.preventDefault(); prev(); }
+  if (e.key==='Home')                    { e.preventDefault(); go(0); }
+  if (e.key==='End')                     { e.preventDefault(); go(N-1); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+document.addEventListener('touchend',   e => { const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx)>50) dx<0?next():prev(); });
+
+update();
+</script>
+</body>
+</html>
