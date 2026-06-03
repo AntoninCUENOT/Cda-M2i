@@ -798,7 +798,190 @@ router.use(authenticate,<br>
     </div>
   </div>
 
-  <!-- ══ 16 DÉMO ══ -->
+  <!-- ══ 16 PATTERN CONTROLLER / SERVICE ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-v" style="margin-bottom:12px;">Architecture backend</div>
+      <h2 style="margin-bottom:6px;">Pattern Controller / Service</h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:18px;">Séparation des responsabilités — le controller ne fait que du HTTP, le service contient toute la logique métier</p>
+      <div class="grid-2" style="gap:20px;align-items:start;">
+        <div>
+          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Controller — gestion HTTP uniquement</p>
+          <div class="code">
+<span class="cmt">// reviewController.ts</span><br>
+<span class="kw">export async function</span> <span class="fn">upsertReviewController</span>(<br>
+  req: AuthenticatedRequest, res, next<br>
+) {<br>
+  <span class="kw">try</span> {<br>
+    <span class="cmt">// 1. Valider les données entrantes (Zod)</span><br>
+    <span class="kw">const</span> { body, params } = upsertReviewSchema<br>
+      .<span class="fn">parse</span>({ body: req.body, params: req.params });<br>
+    <span class="kw">const</span> animeId = <span class="fn">parseInt</span>(params.animeId, <span class="num">10</span>);<br><br>
+    <span class="cmt">// 2. Déléguer au service (logique métier)</span><br>
+    <span class="kw">const</span> review = <span class="kw">await</span> <span class="fn">upsertReview</span>(<br>
+      req.user!.userId, animeId, body<br>
+    );<br><br>
+    <span class="cmt">// 3. Réponse HTTP</span><br>
+    res.<span class="fn">status</span>(<span class="num">201</span>).<span class="fn">json</span>({ success: <span class="kw">true</span>, data: review });<br>
+  } <span class="kw">catch</span> (err) { <span class="fn">next</span>(err); }<br>
+}
+          </div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--s600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Service — logique métier pure</p>
+          <div class="code">
+<span class="cmt">// reviewService.ts</span><br>
+<span class="kw">export async function</span> <span class="fn">upsertReview</span>(<br>
+  userId: <span class="kw">string</span>, animeId: <span class="kw">number</span>, data<br>
+): Promise&lt;Review&gt; {<br><br>
+  <span class="cmt">// Règle : 1 seul avis par (user, animé)</span><br>
+  <span class="kw">const</span> existing = <span class="kw">await</span> Review.<span class="fn">findOne</span>({<br>
+    where: { id_user: userId, id_anime: animeId }<br>
+  });<br><br>
+  <span class="kw">if</span> (existing) {<br>
+    <span class="cmt">// Mise à jour si existe déjà (UPSERT)</span><br>
+    <span class="kw">await</span> existing.<span class="fn">update</span>(data);<br>
+    <span class="kw">return</span> existing;<br>
+  }<br><br>
+  <span class="cmt">// Création — privé par défaut (RGPD)</span><br>
+  <span class="kw">return</span> Review.<span class="fn">create</span>({<br>
+    id_user: userId, id_anime: animeId,<br>
+    visibility: data.visibility ?? <span class="str">'PRIVE'</span>,<br>
+    ...data<br>
+  });<br>
+}
+          </div>
+          <div class="card card-v" style="margin-top:12px;padding:12px;">
+            <p style="font-size:11px;font-weight:700;color:var(--p700);margin-bottom:4px;">Avantage clé</p>
+            <p style="font-size:12px;">Le service ne connaît pas HTTP — testable avec Jest sans démarrer Express</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 17 ZOD + BCRYPT ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-e" style="margin-bottom:12px;">Sécurité — validation & mots de passe</div>
+      <h2 style="margin-bottom:18px;">Zod + bcrypt — deux lignes de défense</h2>
+      <div class="grid-2" style="gap:20px;align-items:start;">
+        <div>
+          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Validation Zod — avant la BDD</p>
+          <div class="code">
+<span class="cmt">// schemas/review.ts</span><br>
+<span class="kw">export const</span> upsertReviewSchema = z.<span class="fn">object</span>({<br>
+  body: z.<span class="fn">object</span>({<br>
+    rating: z.<span class="fn">number</span>()<br>
+      .<span class="fn">min</span>(<span class="num">0</span>).<span class="fn">max</span>(<span class="num">10</span>)<br>
+      .<span class="fn">refine</span>(v =&gt; (v * <span class="num">2</span>) % <span class="num">1</span> === <span class="num">0</span>,<br>
+        <span class="str">'Multiple de 0.5 requis'</span>),<br>
+    comment: z.<span class="fn">string</span>().<span class="fn">max</span>(<span class="num">2000</span>).<span class="fn">optional</span>(),<br>
+    visibility: z.<span class="fn">enum</span>([<span class="str">'PUBLIC'</span>, <span class="str">'PRIVE'</span>])<br>
+      .<span class="fn">optional</span>(),<br>
+  }),<br>
+  params: z.<span class="fn">object</span>({ animeId: z.<span class="fn">string</span>() }),<br>
+});<br>
+          </div>
+          <div class="card card-g" style="margin-top:10px;padding:12px;">
+            <p style="font-size:11px;color:#065F46;font-weight:600;">Si rating: "abc" → erreur 400 structurée<br>avant que Sequelize soit appelé</p>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--s600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">bcrypt — inscription sécurisée</p>
+          <div class="code">
+<span class="cmt">// authService.ts</span><br>
+<span class="kw">export async function</span> <span class="fn">register</span>(<br>
+  input: RegisterInput<br>
+) {<br>
+  <span class="cmt">// Unicité email + pseudo</span><br>
+  <span class="kw">const</span> existing = <span class="kw">await</span> User.<span class="fn">findOne</span>(<br>
+    { where: { email: input.email } }<br>
+  );<br>
+  <span class="kw">if</span> (existing)<br>
+    <span class="kw">throw new</span> <span class="fn">AppError</span>(<span class="num">409</span>, <span class="str">'Email déjà utilisé'</span>);<br><br>
+  <span class="cmt">// Hash irréversible — jamais en clair</span><br>
+  <span class="kw">const</span> hash = <span class="kw">await</span> bcrypt.<span class="fn">hash</span>(<br>
+    input.password, <span class="num">12</span> <span class="cmt">// 2^12 itérations</span><br>
+  );<br><br>
+  <span class="kw">const</span> user = <span class="kw">await</span> User.<span class="fn">create</span>({<br>
+    ...input, password: hash<br>
+  });<br>
+  <span class="kw">return</span> { token: <span class="fn">signToken</span>(user.id_user) };<br>
+}
+          </div>
+          <div class="card card-w" style="margin-top:10px;padding:12px;">
+            <p style="font-size:11px;color:#92400E;font-weight:600;">bcrypt coût 12 = 4096 itérations<br>Brute force → des années même avec GPU</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 18 REDUX + AXIOS ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-c" style="margin-bottom:12px;">Architecture frontend</div>
+      <h2 style="margin-bottom:18px;">Redux AsyncThunk + Axios intercepteur</h2>
+      <div class="grid-2" style="gap:20px;align-items:start;">
+        <div>
+          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">createAsyncThunk — appel API + mapping BDD→UI</p>
+          <div class="code">
+<span class="cmt">// librarySlice.ts</span><br>
+<span class="kw">export const</span> loadLibrary = <span class="fn">createAsyncThunk</span>(<br>
+  <span class="str">'library/load'</span>,<br>
+  <span class="kw">async</span> (_, { rejectWithValue }) =&gt; {<br>
+    <span class="kw">try</span> {<br>
+      <span class="kw">const</span> { data } = <span class="kw">await</span> apiClient<br>
+        .<span class="fn">get</span>(<span class="str">'/users/me/animes'</span>);<br><br>
+      <span class="cmt">// Mapper snake_case BDD → camelCase UI</span><br>
+      <span class="kw">return</span> data.data.data.<span class="fn">map</span>(mapBackendEntry);<br>
+    } <span class="kw">catch</span> (err) {<br>
+      <span class="kw">return</span> <span class="fn">rejectWithValue</span>(err.message);<br>
+    }<br>
+  }<br>
+);<br><br>
+<span class="cmt">// 3 états automatiques :</span><br>
+<span class="cmt">// pending   → isLoading: true (spinner)</span><br>
+<span class="cmt">// fulfilled → animes: [...] (données)</span><br>
+<span class="cmt">// rejected  → error: message (alerte)</span>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--s600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Axios intercepteur — JWT automatique</p>
+          <div class="code">
+<span class="cmt">// apiClient.ts</span><br>
+<span class="kw">const</span> apiClient = axios.<span class="fn">create</span>({<br>
+  baseURL: process.env.EXPO_PUBLIC_API_URL,<br>
+  timeout: <span class="num">10000</span>,<br>
+});<br><br>
+<span class="cmt">// Avant chaque requête : injecter le JWT</span><br>
+apiClient.interceptors.request.<span class="fn">use</span>(<span class="kw">async</span> config =&gt; {<br>
+  <span class="kw">const</span> token = <span class="kw">await</span> AsyncStorage<br>
+    .<span class="fn">getItem</span>(StorageKeys.AUTH_TOKEN);<br>
+  <span class="kw">if</span> (token)<br>
+    config.headers.Authorization =<br>
+      <span class="str">`Bearer ${token}`</span>;<br>
+  <span class="kw">return</span> config;<br>
+});<br><br>
+<span class="cmt">// Après chaque réponse : normaliser l'erreur</span><br>
+apiClient.interceptors.response.<span class="fn">use</span>(<br>
+  res =&gt; res,<br>
+  err =&gt; Promise.<span class="fn">reject</span>(<br>
+    <span class="kw">new</span> <span class="fn">Error</span>(err.response?.data?.message<br>
+      ?? <span class="str">'Erreur réseau'</span>)<br>
+  )<br>
+);
+          </div>
+          <div class="card card-c" style="margin-top:10px;padding:12px;">
+            <p style="font-size:11px;color:var(--s600);font-weight:600;">Sans intercepteur : chaque appel API doit manuellement récupérer le token et formater les erreurs → code dupliqué</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 16b → renommé 19 DÉMO ══ -->
   <div class="slide bg-gray center">
     <div class="wide">
       <div class="tag tag-c" style="margin-bottom:12px;">Démonstration</div>
@@ -880,7 +1063,7 @@ router.use(authenticate,<br>
 
 <script>
 const slides = document.querySelectorAll('.slide');
-const N = slides.length;
+const N = slides.length; // 21 slides
 let cur = 0;
 
 const dotsEl = document.getElementById('dots');
