@@ -3,6 +3,8 @@ import Anime from './Anime';
 import UserAnime from './UserAnime';
 import Review from './Review';
 import Follow from './Follow';
+import GroupMessage from './GroupMessage';
+import Group from './Group';
 
 export function defineAssociations(): void {
   // UserAnime ↔ User / Anime
@@ -20,4 +22,8 @@ export function defineAssociations(): void {
   // Follow ↔ User
   Follow.belongsTo(User, { foreignKey: 'id_follower', as: 'follower' });
   Follow.belongsTo(User, { foreignKey: 'id_following', as: 'following' });
+
+  // GroupMessage ↔ User / Group
+  GroupMessage.belongsTo(User, { foreignKey: 'id_author', as: 'author' });
+  GroupMessage.belongsTo(Group, { foreignKey: 'id_group', as: 'group' });
 }

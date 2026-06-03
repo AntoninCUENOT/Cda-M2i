@@ -8,6 +8,7 @@ import messagingReducer from './slices/messagingSlice';
 import groupsReducer from './slices/groupsSlice';
 import reviewsReducer from './slices/reviewsSlice';
 import socialReducer from './slices/socialSlice';
+import adminReducer from './slices/adminSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     groups: groupsReducer,
     reviews: reviewsReducer,
     social: socialReducer,
+    admin: adminReducer,
   },
 });
 

@@ -21,6 +21,7 @@ import ChatScreen from '../screens/main/ChatScreen';
 import NewMessageScreen from '../screens/main/NewMessageScreen';
 import AnimeGroupScreen from '../screens/main/AnimeGroupScreen';
 import UserProfileScreen from '../screens/main/UserProfileScreen';
+import AdminPanelScreen from '../screens/main/AdminPanelScreen';
 
 import { AuthStackParamList, MainTabParamList, MainStackParamList, RootStackParamList } from './types';
 
@@ -88,6 +89,7 @@ const MainNavigator = () => (
     <MainStack.Screen name="NewMessage" component={NewMessageScreen} />
     <MainStack.Screen name="AnimeGroup" component={AnimeGroupScreen} />
     <MainStack.Screen name="UserProfile" component={UserProfileScreen} />
+    <MainStack.Screen name="AdminPanel" component={AdminPanelScreen} />
   </MainStack.Navigator>
 );
 

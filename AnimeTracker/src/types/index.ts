@@ -166,6 +166,47 @@ export interface Follow {
   createdAt: string;
 }
 
+// Types Admin
+export interface AdminStats {
+  totalUsers: number;
+  totalReviews: number;
+  totalGroups: number;
+  totalGroupMessages: number;
+  totalMessages: number;
+  totalAnimes: number;
+}
+
+export interface AdminUser {
+  id_user: string;
+  email: string;
+  pseudo: string;
+  photo: string | null;
+  role: UserRole;
+  is_active: boolean;
+  is_suspended: boolean;
+  suspension_end_date: string | null;
+  created_at: string;
+}
+
+export interface AdminReview {
+  id_review: string;
+  rating: number;
+  comment: string | null;
+  visibility: 'PUBLIC' | 'PRIVE';
+  likes_count: number;
+  created_at: string;
+  author?: { id_user: string; pseudo: string; photo: string | null };
+  anime?: { id_anime: number; title: string; image_url: string | null };
+}
+
+export interface AdminGroupMessage {
+  id_group_message: string;
+  content: string;
+  created_at: string;
+  author?: { id_user: string; pseudo: string; photo: string | null };
+  group?: { id_group: string; name: string };
+}
+
 export interface PublicProfile {
   id: string;
   pseudo: string;

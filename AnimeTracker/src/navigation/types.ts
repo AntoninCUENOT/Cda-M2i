@@ -32,6 +32,7 @@ export type MainStackParamList = {
     userPseudo: string;
     userAvatar: number | string | null;
   };
+  AdminPanel: undefined;
 };
 
 export type RootStackParamList = {

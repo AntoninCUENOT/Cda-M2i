@@ -820,7 +820,7 @@ const partie2 = [
   new Paragraph({
     children: [
       new TextRun({
-        text: 'Dans la version actuelle (v1.0), les rôles Modérateur et Administrateur sont définis en base de données mais l\'interface d\'administration n\'est pas développée. L\'accent a été mis sur l\'expérience utilisateur standard.',
+        text: 'Le rôle ADMIN dispose d\'un panneau d\'administration complet (stats globales, gestion des utilisateurs, modération des avis et des messages de groupe). L\'accès est sécurisé par le middleware requireRole(\'ADMIN\') — toute tentative d\'accès par un non-admin retourne une erreur 403.',
         size: 22,
         italics: true,
         color: GRAY,
@@ -1001,6 +1001,14 @@ const codeBlock = (text) =>
     children: [new TextRun({ text, font: 'Courier New', size: 18, color: '1E1B4B' })],
     spacing: { before: 60, after: 60 },
     indent: { left: 360 },
+  });
+
+const codeScreen = (text) =>
+  new Paragraph({
+    children: [new TextRun({ text, font: 'Courier New', size: 18, color: '1E293B' })],
+    spacing: { before: 40, after: 40 },
+    indent: { left: 360, right: 360 },
+    shading: { type: ShadingType.SOLID, color: 'F1F5F9', fill: 'F1F5F9' },
   });
 
 const partie3 = [
@@ -1626,6 +1634,178 @@ const partie4 = [
   codeBlock('    visibility: z.enum([\'PUBLIC\', \'PRIVE\']).optional(),'),
   codeBlock('  }),'),
   codeBlock('});'),
+
+  ...blank(2),
+
+  // ── 4.2 bis Sécurité applicative ──
+  heading2('4.2 bis  Sécurité applicative — mesures de protection'),
+
+  new Paragraph({
+    children: [new TextRun({
+      text: 'La sécurité est traitée en couches successives : headers HTTP, limitation de débit, sanitisation des entrées, validation typée, authentification JWT et contrôle d\'accès par rôle. Aucune de ces protections n\'est suffisante seule — c\'est leur combinaison qui garantit la robustesse.',
+      size: 22,
+    })],
+    spacing: { after: 200 },
+  }),
+
+  heading3('1. En-têtes HTTP de sécurité — Helmet'),
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Helmet configure automatiquement une série d\'en-têtes HTTP qui protègent contre les attaques web classiques (XSS, clickjacking, MIME sniffing, injection de contenu). Chaque directive a un rôle précis :',
+      size: 22,
+    })],
+    spacing: { after: 120 },
+  }),
+
+  codeScreen('// app.ts — configuration Helmet'),
+  codeScreen('app.use(helmet({'),
+  codeScreen('  contentSecurityPolicy: {'),
+  codeScreen('    directives: {'),
+  codeScreen('      defaultSrc: ["\'self\'"],      // seul le domaine courant peut charger des ressources'),
+  codeScreen('      scriptSrc:  ["\'self\'"],      // aucun script inline ou externe'),
+  codeScreen('      imgSrc:     ["\'self\'", "data:", "https:"], // images depuis HTTPS uniquement'),
+  codeScreen('      objectSrc:  ["\'none\'"],      // interdit Flash et plugins'),
+  codeScreen('    },'),
+  codeScreen('  },'),
+  codeScreen('  frameguard:    { action: "deny" },    // X-Frame-Options: DENY → anti-clickjacking'),
+  codeScreen('  noSniff:       true,                  // X-Content-Type-Options: nosniff'),
+  codeScreen('  hsts:          { maxAge: 31536000, includeSubDomains: true }, // force HTTPS 1 an'),
+  codeScreen('  hidePoweredBy: true,                  // masque X-Powered-By: Express'),
+  codeScreen('  xssFilter:     true,                  // X-XSS-Protection: 1; mode=block'),
+  codeScreen('}));'),
+
+  ...blank(1),
+
+  heading3('2. Rate Limiting — protection contre la force brute'),
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Un rate limiter global bloque les clients qui font trop de requêtes en peu de temps. C\'est la première ligne de défense contre les attaques par force brute sur /auth/login et les tentatives d\'énumération d\'utilisateurs.',
+      size: 22,
+    })],
+    spacing: { after: 120 },
+  }),
+
+  codeScreen('// app.ts — rate limiting global'),
+  codeScreen('app.use(rateLimit({'),
+  codeScreen('  windowMs: 15 * 60 * 1000,  // fenêtre de 15 minutes'),
+  codeScreen('  max:       100,             // maximum 100 requêtes par IP par fenêtre'),
+  codeScreen('  standardHeaders: true,      // renvoie Retry-After dans les headers'),
+  codeScreen('  message: {'),
+  codeScreen('    success: false,'),
+  codeScreen('    message: "Trop de requêtes, réessayez dans 15 minutes"'),
+  codeScreen('  },'),
+  codeScreen('}));'),
+
+  ...blank(1),
+
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Effet : un attaquant qui tente de deviner un mot de passe sera bloqué après 100 essais sur 15 minutes. Avec un mot de passe de 8+ caractères (lettres + chiffres), la probabilité de succès par force brute est négligeable.',
+      size: 22,
+      italics: true,
+      color: GRAY,
+    })],
+    spacing: { after: 200 },
+  }),
+
+  heading3('3. Sanitisation XSS — nettoyage des entrées'),
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Le middleware sanitizeBody parcourt récursivement le body de chaque requête et échappe les caractères HTML dangereux (<, >, ", \') avant qu\'ils n\'atteignent la base de données. Cela complète la validation Zod en empêchant le stockage de contenu malveillant.',
+      size: 22,
+    })],
+    spacing: { after: 120 },
+  }),
+
+  codeScreen('// middlewares/sanitize.ts'),
+  codeScreen('function sanitizeValue(value: unknown): unknown {'),
+  codeScreen('  if (typeof value === "string") {'),
+  codeScreen('    return value'),
+  codeScreen('      .replace(/&/g,  "&amp;")'),
+  codeScreen('      .replace(/</g,  "&lt;")   // empêche <script>alert()</script>'),
+  codeScreen('      .replace(/>/g,  "&gt;")'),
+  codeScreen('      .replace(/"/g,  "&quot;")'),
+  codeScreen('      .replace(/\'/g, "&#x27;");'),
+  codeScreen('  }'),
+  codeScreen('  if (typeof value === "object" && value !== null) {'),
+  codeScreen('    // Parcours récursif des objets et tableaux imbriqués'),
+  codeScreen('    return Object.fromEntries('),
+  codeScreen('      Object.entries(value).map(([k, v]) => [k, sanitizeValue(v)])'),
+  codeScreen('    );'),
+  codeScreen('  }'),
+  codeScreen('  return value;'),
+  codeScreen('}'),
+  codeScreen(''),
+  codeScreen('export const sanitizeBody = (req, _res, next) => {'),
+  codeScreen('  if (req.body) req.body = sanitizeValue(req.body);'),
+  codeScreen('  next();'),
+  codeScreen('};'),
+
+  ...blank(1),
+
+  heading3('4. Contrôle d\'accès par rôle — RBAC avec requireRole()'),
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Le middleware requireRole() implémente un contrôle d\'accès basé sur les rôles (Role-Based Access Control). Il s\'applique après authenticate, qui a déjà vérifié le JWT et peuplé req.user.role. Le panneau d\'administration est entièrement protégé par cette combinaison.',
+      size: 22,
+    })],
+    spacing: { after: 120 },
+  }),
+
+  codeScreen('// middlewares/authenticate.ts'),
+  codeScreen('export function requireRole(...roles: string[]) {'),
+  codeScreen('  return (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {'),
+  codeScreen('    if (!req.user) {'),
+  codeScreen('      return next(new AppError(401, "Non authentifié"));'),
+  codeScreen('    }'),
+  codeScreen('    if (!roles.includes(req.user.role)) {'),
+  codeScreen('      return next(new AppError(403, "Accès refusé")); // 403 Forbidden'),
+  codeScreen('    }'),
+  codeScreen('    next();'),
+  codeScreen('  };'),
+  codeScreen('}'),
+
+  ...blank(1),
+
+  codeScreen('// routes/admin.ts — toutes les routes admin protégées en une ligne'),
+  codeScreen('router.use(authenticate, requireRole("ADMIN"));'),
+  codeScreen(''),
+  codeScreen('router.get("/stats",                   asyncHandler(getStatsController));'),
+  codeScreen('router.get("/users",                   asyncHandler(listUsersController));'),
+  codeScreen('router.patch("/users/:id/role",        asyncHandler(changeUserRoleController));'),
+  codeScreen('router.patch("/users/:id/suspend",     asyncHandler(suspendUserController));'),
+  codeScreen('router.delete("/reviews/:reviewId",    asyncHandler(deleteReviewController));'),
+  codeScreen('router.delete("/group-messages/:id",   asyncHandler(deleteGroupMessageController));'),
+
+  ...blank(1),
+
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Résultat : un utilisateur avec role = "USER" qui tente d\'accéder à /api/admin/stats reçoit une réponse 403 Forbidden. Le rôle est encodé dans le JWT signé côté serveur — il ne peut pas être falsifié côté client.',
+      size: 22,
+      italics: true,
+      color: GRAY,
+    })],
+    spacing: { after: 200 },
+  }),
+
+  heading3('Synthèse des couches de sécurité'),
+  new Paragraph({
+    children: [new TextRun({
+      text: 'Chaque requête entrante traverse successivement :',
+      size: 22,
+    })],
+    spacing: { after: 100 },
+  }),
+  bullet('Helmet → headers HTTP défensifs (XSS, clickjacking, MIME sniffing)'),
+  bullet('Rate Limiter → blocage si > 100 req / 15 min / IP'),
+  bullet('Payload limit → rejet si body > 10 ko'),
+  bullet('sanitizeBody → échappement HTML de toutes les chaînes'),
+  bullet('Zod → validation typée et contraintes métier (format, longueur, enum)'),
+  bullet('authenticate → vérification JWT + blacklist Redis'),
+  bullet('requireRole → vérification du rôle (admin, modérateur...)'),
+  bullet('Sequelize → requêtes paramétrées → immunité injection SQL'),
+  bullet('UUID → clés primaires non-prédictibles → pas d\'énumération'),
 
   ...blank(2),
 

@@ -186,6 +186,15 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.menuSection}>
+          {user?.role === 'ADMIN' && (
+            <TouchableOpacity
+              style={[styles.adminBtn, { backgroundColor: '#0f3460' }, Shadows.sm]}
+              onPress={() => navigation.navigate('AdminPanel')}
+            >
+              <Ionicons name="shield-checkmark" size={20} color="#e94560" />
+              <Text style={[styles.logoutText, { color: '#FFFFFF' }]}>Panneau Admin</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.logoutBtn, { backgroundColor: colors.card }, Shadows.sm]}
             onPress={() => dispatch(logout())}
@@ -282,6 +291,7 @@ const styles = StyleSheet.create({
   activityValue: { fontSize: FontSize.lg, fontWeight: '700', marginTop: Spacing.xs },
   activityLabel: { fontSize: FontSize.xs, marginTop: Spacing.xs },
   menuSection: { padding: Spacing.lg },
+  adminBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, borderRadius: BorderRadius.md, gap: Spacing.sm, marginBottom: Spacing.md },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: Spacing.lg, borderRadius: BorderRadius.md, gap: Spacing.sm },
   logoutText: { fontSize: FontSize.md, fontWeight: '600' },
   version: { fontSize: FontSize.sm, textAlign: 'center', paddingVertical: Spacing.xl },

@@ -5,6 +5,7 @@ import animesRouter from './animes';
 import usersRouter from './users';
 import messagesRouter from './messages';
 import groupsRouter from './groups';
+import adminRouter from './admin';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use('/animes', animesRouter);
 router.use('/users', usersRouter);
 router.use('/conversations', messagesRouter);
 router.use('/groups', groupsRouter);
+router.use('/admin', adminRouter);
 
 export default router;
