@@ -161,6 +161,61 @@ cd scripts-docx && npm install && node generate-dossier.mjs
 
 ---
 
+## CI/CD à mettre en place (GitHub Actions)
+
+Quand l'utilisateur demande de mettre en place le CI/CD, créer ces deux fichiers et commiter :
+
+### `.github/workflows/ci.yml`
+```yaml
+name: CI — AnimeTracker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint + Type check + Tests Jest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: AnimeTracker/backend/package-lock.json
+      - name: Install
+        run: cd AnimeTracker/backend && npm ci
+      - name: Lint
+        run: cd AnimeTracker/backend && npm run lint
+      - name: Type check
+        run: cd AnimeTracker/backend && npx tsc --noEmit
+      - name: Tests Jest
+        run: cd AnimeTracker/backend && npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_secret_for_ci_minimum_32_chars_ok
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: animetracker
+          POSTGRES_USER: animetracker_user
+          POSTGRES_PASSWORD: animetracker_dev_password
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JIKAN_API_URL: https://api.jikan.moe/v4
+```
+
+**Note :** Les 38 tests mockent entièrement BDD et Redis — aucun service externe requis en CI.
+
+### Badge à ajouter en haut du `README.md`
+```markdown
+[![CI](https://github.com/AntoninCUENOT/Cda-M2i/actions/workflows/ci.yml/badge.svg)](https://github.com/AntoninCUENOT/Cda-M2i/actions/workflows/ci.yml)
+```
+
+---
+
 ## Historique des bugs résolus (utile pour le contexte)
 
 | Problème | Cause | Solution |
