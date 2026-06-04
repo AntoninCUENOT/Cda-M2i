@@ -17,7 +17,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate, requireRole('ADMIN'));
+router.use(asyncHandler(authenticate), requireRole('ADMIN'));
 
 router.get('/stats', asyncHandler(getStatsController));
 

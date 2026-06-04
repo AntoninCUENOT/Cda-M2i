@@ -34,6 +34,13 @@ yarn-error.*
 .env
 .env.local
 .env*.local
+backend/.env
+
+# seeds & scripts temporaires
+backend/seed.mjs
+
+# dossiers git backup
+.git_backup/
 
 # typescript
 *.tsbuildinfo
