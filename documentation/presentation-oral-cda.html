@@ -303,7 +303,7 @@
 <body>
 
 <div class="progress" id="progress"></div>
-<div class="slide-num" id="snum">1 / 21</div>
+<div class="slide-num" id="snum">1 / 23</div>
 
 <div class="deck" id="deck">
 
@@ -347,10 +347,10 @@
         <div style="display:flex;flex-direction:column;gap:7px;">
           <div class="layer"><div class="lnum">7</div><div class="lname">Maquettes & UX</div></div>
           <div class="layer"><div class="lnum">8</div><div class="lname">Sécurité applicative</div></div>
-          <div class="layer"><div class="lnum">9</div><div class="lname">Base de données</div></div>
+          <div class="layer"><div class="lnum">9</div><div class="lname">Base de données + MPD</div></div>
           <div class="layer"><div class="lnum">10</div><div class="lname">Panel d'administration</div></div>
-          <div class="layer"><div class="lnum">11</div><div class="lname">Tests</div></div>
-          <div class="layer"><div class="lnum" style="background:var(--s500);">12+</div><div class="lname">Code · Démo · Conclusion</div></div>
+          <div class="layer"><div class="lnum">11</div><div class="lname">DevOps & Déploiement</div></div>
+          <div class="layer"><div class="lnum" style="background:var(--s500);">12+</div><div class="lname">Tests · Code · Démo · Conclusion</div></div>
         </div>
       </div>
     </div>
@@ -676,6 +676,120 @@
     </div>
   </div>
 
+  <!-- ══ 11b MPD — RELATIONS BDD ══ -->
+  <div class="slide bg-gray">
+    <div class="wide">
+      <div class="tag tag-g" style="margin-bottom:10px;">Base de données</div>
+      <h2 style="margin-bottom:4px;">Modèle Physique de Données</h2>
+      <p style="color:var(--t3);font-size:12px;margin-bottom:16px;">Relations entre les 12 tables — clés étrangères et cardinalités</p>
+
+      <!-- MPD VISUEL -->
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:11px;">
+
+        <!-- LIGNE CENTRALE : USER -->
+        <div style="display:flex;justify-content:center;">
+          <div style="background:#1E1B4B;color:white;border-radius:10px;padding:10px 24px;text-align:center;font-weight:700;font-size:13px;box-shadow:0 2px 12px rgba(139,92,246,.4);">
+            👤 user<br><span style="font-size:10px;font-weight:400;opacity:.7;">id_user · email · pseudo · role · is_suspended</span>
+          </div>
+        </div>
+
+        <!-- FLÈCHES DEPUIS USER -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;align-items:start;">
+
+          <!-- user_anime -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#8B5CF6;"></div>
+            <div style="font-size:9px;color:var(--p600);font-weight:600;">1→N</div>
+            <div style="background:#F5F3FF;border:1.5px solid #8B5CF6;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#6D28D9;margin-bottom:3px;">user_anime</p>
+              <p style="color:var(--t3);line-height:1.4;">status<br>current_episode<br>is_favorite</p>
+              <div style="margin-top:6px;font-size:9px;color:var(--p600);background:#EDE9FE;border-radius:4px;padding:2px 6px;">UNIQUE(user,anime)</div>
+            </div>
+            <div style="font-size:9px;color:var(--p600);font-weight:600;">N→1</div>
+            <div style="width:1px;height:8px;background:#8B5CF6;"></div>
+            <div style="background:#D1FAE5;border:1.5px solid #10B981;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#065F46;margin-bottom:3px;">anime</p>
+              <p style="color:var(--t3);line-height:1.4;">id_anime (Jikan)<br>title · score</p>
+            </div>
+          </div>
+
+          <!-- review -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#8B5CF6;"></div>
+            <div style="font-size:9px;color:var(--p600);font-weight:600;">1→N</div>
+            <div style="background:#F5F3FF;border:1.5px solid #8B5CF6;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#6D28D9;margin-bottom:3px;">review</p>
+              <p style="color:var(--t3);line-height:1.4;">rating<br>comment<br>visibility</p>
+              <div style="margin-top:6px;font-size:9px;color:var(--p600);background:#EDE9FE;border-radius:4px;padding:2px 6px;">UNIQUE(user,anime)</div>
+            </div>
+            <div style="font-size:9px;color:var(--p600);font-weight:600;">1→N</div>
+            <div style="width:1px;height:8px;background:#8B5CF6;"></div>
+            <div style="background:#F5F3FF;border:1.5px solid #8B5CF6;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#6D28D9;margin-bottom:3px;">review_like</p>
+              <p style="color:var(--t3);line-height:1.4;">id_review<br>id_user</p>
+              <div style="margin-top:6px;font-size:9px;color:var(--p600);background:#EDE9FE;border-radius:4px;padding:2px 6px;">UNIQUE(review,user)</div>
+            </div>
+          </div>
+
+          <!-- follow -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#8B5CF6;"></div>
+            <div style="font-size:9px;color:var(--p600);font-weight:600;">réflexive</div>
+            <div style="background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#92400E;margin-bottom:3px;">follow</p>
+              <p style="color:var(--t3);line-height:1.4;">id_follower<br>id_following</p>
+              <div style="margin-top:6px;font-size:9px;color:#92400E;background:#FDE68A;border-radius:4px;padding:2px 6px;">CHECK follower≠following</div>
+            </div>
+          </div>
+
+          <!-- conversation -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#8B5CF6;"></div>
+            <div style="font-size:9px;color:var(--s600);font-weight:600;">N→N</div>
+            <div style="background:#ECFEFF;border:1.5px solid #06B6D4;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#0891B2;margin-bottom:3px;">conv_participant</p>
+              <p style="color:var(--t3);line-height:1.4;">id_conversation<br>id_user</p>
+            </div>
+            <div style="font-size:9px;color:var(--s600);font-weight:600;">N→1</div>
+            <div style="width:1px;height:8px;background:#06B6D4;"></div>
+            <div style="background:#ECFEFF;border:1.5px solid #06B6D4;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#0891B2;margin-bottom:3px;">conversation</p>
+              <p style="color:var(--t3);">created_at</p>
+            </div>
+            <div style="font-size:9px;color:var(--s600);font-weight:600;">1→N</div>
+            <div style="width:1px;height:8px;background:#06B6D4;"></div>
+            <div style="background:#ECFEFF;border:1.5px solid #06B6D4;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#0891B2;margin-bottom:3px;">message</p>
+              <p style="color:var(--t3);">content<br>is_read</p>
+            </div>
+          </div>
+
+          <!-- group -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#10B981;"></div>
+            <div style="font-size:9px;color:#065F46;font-weight:600;">anime→1</div>
+            <div style="background:#D1FAE5;border:1.5px solid #10B981;border-radius:8px;padding:8px 10px;text-align:center;width:100%;">
+              <p style="font-weight:700;color:#065F46;margin-bottom:3px;">group</p>
+              <p style="color:var(--t3);line-height:1.4;">name · type<br>OFFICIEL|PERSO</p>
+            </div>
+            <div style="font-size:9px;color:#065F46;font-weight:600;">1→N</div>
+            <div style="display:flex;gap:4px;width:100%;">
+              <div style="background:#D1FAE5;border:1.5px solid #10B981;border-radius:8px;padding:6px 8px;text-align:center;flex:1;">
+                <p style="font-weight:700;color:#065F46;font-size:10px;">group_member</p>
+                <p style="color:var(--t3);font-size:9px;">is_moderator</p>
+              </div>
+              <div style="background:#D1FAE5;border:1.5px solid #10B981;border-radius:8px;padding:6px 8px;text-align:center;flex:1;">
+                <p style="font-weight:700;color:#065F46;font-size:10px;">group_msg</p>
+                <p style="color:var(--t3);font-size:9px;">deleted_at</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ 12 PANEL ADMIN ══ -->
   <div class="slide bg-gray">
     <div class="wide">
@@ -709,6 +823,73 @@ router.use(authenticate,<br>
           <div class="card" style="text-align:center;"><div style="font-size:22px;margin-bottom:6px;">💬</div><p style="font-size:13px;font-weight:600;">Messages groupes</p><p style="font-size:11px;color:var(--t3);">Soft-delete avec audit</p></div>
           <div class="card card-g" style="grid-column:span 2;text-align:center;padding:12px;">
             <p style="font-size:12px;color:#065F46;font-weight:600;">✓ MP jamais visibles — privacy by design</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 12b DEVOPS / DÉPLOIEMENT ══ -->
+  <div class="slide bg-white">
+    <div class="wide">
+      <div class="tag tag-g" style="margin-bottom:12px;">Infrastructure & Déploiement</div>
+      <h2 style="margin-bottom:6px;">Docker en dev — <span class="grad-text">déploiement</span> en prod</h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:20px;">Environnement de développement reproductible → stratégie de déploiement production</p>
+
+      <div class="grid-2" style="gap:24px;align-items:start;">
+
+        <!-- DEV -->
+        <div>
+          <p style="font-size:11px;color:#065F46;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🐳 Environnement développement</p>
+          <div class="arch-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+            <div class="arch-box" style="max-width:100%;border-color:#6EE7B7;background:#D1FAE5;">
+              <h3 style="color:#065F46;">postgres:15-alpine</h3>
+              <p>Port 5433 · init.sql auto · Volume persistant</p>
+            </div>
+            <div class="arch-box" style="max-width:100%;border-color:#6EE7B7;background:#D1FAE5;">
+              <h3 style="color:#065F46;">redis:7-alpine</h3>
+              <p>Port 6380 · Blacklist JWT · appendonly yes</p>
+            </div>
+            <div class="arch-box" style="max-width:100%;border-color:#DDD6FE;background:#F5F3FF;">
+              <h3 style="color:var(--p700);">Backend Node.js — local</h3>
+              <p>npm run dev · Port 3000 · ts-node-dev</p>
+            </div>
+          </div>
+          <div class="card card-w" style="margin-top:10px;padding:10px;">
+            <p style="font-size:11px;color:#92400E;font-weight:600;">⚠ Contrainte Windows</p>
+            <p style="font-size:11px;color:var(--t3);margin-top:3px;">Docker Desktop ne propage pas les événements inotify → backend lancé en local, pas en conteneur</p>
+          </div>
+        </div>
+
+        <!-- PROD -->
+        <div>
+          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚀 Stratégie de déploiement production</p>
+
+          <div class="tl"><div class="tl-dot"></div><div>
+            <h3>Backend — VPS ou Railway/Render</h3>
+            <p>Build TypeScript → JS · Image Docker multi-stage · Variables d'env injectées par la plateforme · HTTPS obligatoire</p>
+          </div></div>
+
+          <div class="tl"><div class="tl-dot"></div><div>
+            <h3>Base de données — service managé</h3>
+            <p>Supabase ou PostgreSQL managé · Sauvegardes automatiques · Pas de gestion du serveur</p>
+          </div></div>
+
+          <div class="tl"><div class="tl-dot"></div><div>
+            <h3>Frontend mobile — Expo EAS Build</h3>
+            <p>Build cloud → APK/AAB signé · Distribution Google Play · URL prod dans .env</p>
+          </div></div>
+
+          <div class="tl" style="margin-bottom:0;"><div class="tl-dot" style="background:var(--s500);"></div><div>
+            <h3>CI/CD — GitHub Actions</h3>
+            <p>Lint + typecheck + tests Jest à chaque push · 38 tests mockés = pas de BDD en CI</p>
+          </div></div>
+
+          <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="tag tag-g">Docker multi-stage</span>
+            <span class="tag tag-c">HTTPS</span>
+            <span class="tag tag-v">EAS Build</span>
+            <span class="tag tag-g">GitHub Actions</span>
           </div>
         </div>
       </div>
@@ -918,74 +1099,83 @@ router.use(authenticate,<br>
     </div>
   </div>
 
-  <!-- ══ 18 REDUX + AXIOS ══ -->
+  <!-- ══ 18 GESTION ÉTAT FRONTEND ══ -->
   <div class="slide bg-white">
     <div class="wide">
       <div class="tag tag-c" style="margin-bottom:12px;">Architecture frontend</div>
-      <h2 style="margin-bottom:18px;">Redux AsyncThunk + Axios intercepteur</h2>
-      <div class="grid-2" style="gap:20px;align-items:start;">
+      <h2 style="margin-bottom:6px;">Gestion d'état — Redux + Axios</h2>
+      <p style="color:var(--t3);font-size:13px;margin-bottom:20px;">L'état de l'application est centralisé dans un store unique, découpé par domaine métier</p>
+
+      <div class="grid-2" style="gap:24px;align-items:start;">
+
+        <!-- FLUX REDUX -->
         <div>
-          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">createAsyncThunk — appel API + mapping BDD→UI</p>
-          <div class="code">
-<span class="cmt">// librarySlice.ts</span><br>
-<span class="kw">export const</span> loadLibrary = <span class="fn">createAsyncThunk</span>(<br>
-  <span class="str">'library/load'</span>,<br>
-  <span class="kw">async</span> (_, { rejectWithValue }) =&gt; {<br>
-    <span class="kw">try</span> {<br>
-      <span class="kw">const</span> { data } = <span class="kw">await</span> apiClient<br>
-        .<span class="fn">get</span>(<span class="str">'/users/me/animes'</span>);<br><br>
-      <span class="cmt">// Mapper snake_case BDD → camelCase UI</span><br>
-      <span class="kw">return</span> data.data.data.<span class="fn">map</span>(mapBackendEntry);<br>
-    } <span class="kw">catch</span> (err) {<br>
-      <span class="kw">return</span> <span class="fn">rejectWithValue</span>(err.message);<br>
-    }<br>
-  }<br>
-);<br><br>
-<span class="cmt">// 3 états automatiques :</span><br>
-<span class="cmt">// pending   → isLoading: true (spinner)</span><br>
-<span class="cmt">// fulfilled → animes: [...] (données)</span><br>
-<span class="cmt">// rejected  → error: message (alerte)</span>
+          <p style="font-size:11px;color:var(--p600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Principe — flux de données</p>
+
+          <!-- Flux visuel -->
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:stretch;">
+            <div style="background:#F5F3FF;border:1.5px solid #DDD6FE;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;">👆</span>
+              <div><p style="font-weight:600;font-size:13px;color:#6D28D9;">Action utilisateur</p><p style="font-size:11px;color:var(--t3);">Clic sur "Ajouter à ma bibliothèque"</p></div>
+            </div>
+            <div style="text-align:center;color:var(--p500);font-size:16px;">↓</div>
+            <div style="background:#ECFEFF;border:1.5px solid #A5F3FC;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;">⚙️</span>
+              <div><p style="font-weight:600;font-size:13px;color:#0891B2;">Slice Redux (dispatch)</p><p style="font-size:11px;color:var(--t3);">Appel API → POST /users/me/animes</p></div>
+            </div>
+            <div style="text-align:center;color:var(--p500);font-size:16px;">↓</div>
+            <div style="background:#D1FAE5;border:1.5px solid #6EE7B7;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;">🗄️</span>
+              <div><p style="font-weight:600;font-size:13px;color:#065F46;">Store mis à jour</p><p style="font-size:11px;color:var(--t3);">L'animé est ajouté à l'état local</p></div>
+            </div>
+            <div style="text-align:center;color:var(--p500);font-size:16px;">↓</div>
+            <div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;">📱</span>
+              <div><p style="font-weight:600;font-size:13px;color:#92400E;">UI mise à jour automatiquement</p><p style="font-size:11px;color:var(--t3);">Le bouton change en "Terminé"</p></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="tag tag-v">8 slices</span>
+            <span class="tag tag-c">auth · library · reviews</span>
+            <span class="tag tag-g">social · groups · chat</span>
           </div>
         </div>
+
+        <!-- AXIOS INTERCEPTEUR -->
         <div>
-          <p style="font-size:11px;color:var(--s600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Axios intercepteur — JWT automatique</p>
-          <div class="code">
-<span class="cmt">// apiClient.ts</span><br>
-<span class="kw">const</span> apiClient = axios.<span class="fn">create</span>({<br>
-  baseURL: process.env.EXPO_PUBLIC_API_URL,<br>
-  timeout: <span class="num">10000</span>,<br>
-});<br><br>
-<span class="cmt">// Avant chaque requête : injecter le JWT</span><br>
-apiClient.interceptors.request.<span class="fn">use</span>(<span class="kw">async</span> config =&gt; {<br>
-  <span class="kw">const</span> token = <span class="kw">await</span> AsyncStorage<br>
-    .<span class="fn">getItem</span>(StorageKeys.AUTH_TOKEN);<br>
-  <span class="kw">if</span> (token)<br>
-    config.headers.Authorization =<br>
-      <span class="str">`Bearer ${token}`</span>;<br>
-  <span class="kw">return</span> config;<br>
-});<br><br>
-<span class="cmt">// Après chaque réponse : normaliser l'erreur</span><br>
-apiClient.interceptors.response.<span class="fn">use</span>(<br>
-  res =&gt; res,<br>
-  err =&gt; Promise.<span class="fn">reject</span>(<br>
-    <span class="kw">new</span> <span class="fn">Error</span>(err.response?.data?.message<br>
-      ?? <span class="str">'Erreur réseau'</span>)<br>
-  )<br>
-);
+          <p style="font-size:11px;color:var(--s600);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Axios — client HTTP centralisé</p>
+
+          <div class="card card-c" style="margin-bottom:12px;">
+            <p style="font-size:12px;font-weight:600;color:#0891B2;margin-bottom:6px;">Intercepteur de requête</p>
+            <p style="font-size:12px;color:var(--t2);">Avant chaque appel API, le token JWT est automatiquement injecté dans le header <code style="background:#F5F3FF;padding:1px 5px;border-radius:3px;font-size:11px;">Authorization: Bearer ...</code></p>
+            <p style="font-size:11px;color:var(--t3);margin-top:6px;">→ Aucun écran n'a besoin de gérer le token manuellement</p>
           </div>
-          <div class="card card-c" style="margin-top:10px;padding:12px;">
-            <p style="font-size:11px;color:var(--s600);font-weight:600;">Sans intercepteur : chaque appel API doit manuellement récupérer le token et formater les erreurs → code dupliqué</p>
+
+          <div class="card card-v" style="margin-bottom:12px;">
+            <p style="font-size:12px;font-weight:600;color:var(--p700);margin-bottom:6px;">Intercepteur de réponse</p>
+            <p style="font-size:12px;color:var(--t2);">Les erreurs sont normalisées en un seul message lisible, qu'elles viennent de Zod, du backend ou du réseau.</p>
+            <p style="font-size:11px;color:var(--t3);margin-top:6px;">→ L'interface affiche toujours un message compréhensible pour l'utilisateur</p>
+          </div>
+
+          <div class="card card-g">
+            <p style="font-size:12px;font-weight:600;color:#065F46;margin-bottom:4px;">snake_case → camelCase</p>
+            <p style="font-size:11px;color:var(--t3);">La base de données utilise <code style="background:#D1FAE5;padding:1px 4px;border-radius:3px;">id_user</code>, le frontend attend <code style="background:#D1FAE5;padding:1px 4px;border-radius:3px;">userId</code>. Chaque slice possède une fonction de mapping pour convertir les données à la réception.</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ 16b → renommé 19 DÉMO ══ -->
+  <!-- ══ DÉMO ══ -->
   <div class="slide bg-gray center">
     <div class="wide">
       <div class="tag tag-c" style="margin-bottom:12px;">Démonstration</div>
-      <h2 style="margin-bottom:20px;">Scénario de démo</h2>
+      <h2 style="margin-bottom:8px;">Scénario de démo</h2>
+      <div style="background:#1E1B4B;color:white;border-radius:10px;padding:10px 20px;margin-bottom:16px;display:inline-flex;align-items:center;gap:10px;font-size:13px;">
+        <span style="font-size:20px;">🎥</span>
+        <span>Démonstration enregistrée sur émulateur Android · <strong>Pixel 10 Pro XL · API 33</strong></span>
+      </div>
       <div class="grid-2" style="gap:20px;text-align:left;">
         <div>
           <h3 style="color:var(--p600);margin-bottom:10px;font-size:13px;">🔵 Parcours utilisateur</h3>
@@ -1063,7 +1253,7 @@ apiClient.interceptors.response.<span class="fn">use</span>(<br>
 
 <script>
 const slides = document.querySelectorAll('.slide');
-const N = slides.length; // 21 slides
+const N = slides.length; // auto-calculé
 let cur = 0;
 
 const dotsEl = document.getElementById('dots');
