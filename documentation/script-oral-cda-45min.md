@@ -9,14 +9,16 @@ Rythme conseille : parler calmement, laisser respirer les slides, ne pas tout li
 
 | Partie | Slides | Duree cible |
 |---|---:|---:|
-| Introduction et contexte | 1 a 4 | 5 min |
-| Methode, stack, architecture | 5 a 7 | 6 min |
-| Fonctionnalites, UX, securite, BDD | 8 a 12 | 10 min 30 |
-| Tests, bugs, code technique | 13 a 18 | 14 min |
-| Demo, ameliorations, conclusion | 19 a 21 | 9 min 30 |
-| Total | 21 slides | 45 min |
+| Introduction et contexte | 1 à 4 | 5 min |
+| Méthode, stack, architecture | 5 à 7 | 6 min |
+| Fonctionnalités, UX, sécurité | 8 à 10 | 6 min |
+| BDD + MPD, Admin, DevOps | 11 à 12b | 8 min |
+| Tests, bugs | 13 à 14 | 5 min |
+| Code technique | 15 à 18 | 9 min |
+| Démo, améliorations, conclusion | 19 à 23 | 11 min |
+| Total | 23 slides | 45 min |
 
-Astuce timing : si tu es en retard, raccourcis les slides 15 a 18 en gardant seulement JWT, Controller/Service et Zod. Si tu es en avance, detaille les bugs resolus et la demo.
+Astuce timing : si tu es en retard, raccourcis les slides MPD (reste sur les grandes relations) et DevOps (reste sur le Docker dev, skip la prod). Si tu es en avance, détaille davantage les bugs résolus et commente plus longuement la vidéo de démo.
 
 ---
 
@@ -180,7 +182,29 @@ J'ai utilise des UUID pour les utilisateurs, ce qui evite d'exposer des identifi
 
 Les contraintes SQL et les validations service se completent. Par exemple, certaines regles sont protegees en base, mais aussi verifiees cote service pour produire des erreurs plus lisibles.
 
-Transition : sur cette base, j'ai ajoute un espace d'administration.
+Transition : je passe maintenant au schéma visuel des relations entre toutes ces tables.
+
+---
+
+## Slide 11b - MPD — Modèle Physique de Données - 2 min
+
+Sur ce diagramme vous pouvez voir l'ensemble des 12 tables et comment elles sont reliées entre elles.
+
+Au centre, la table user. C'est elle qui est au cœur de tout — presque toutes les autres tables y sont reliées d'une façon ou d'une autre.
+
+En partant de la gauche : user_anime. C'est la table qui représente la bibliothèque personnelle. Elle fait le lien entre un utilisateur et un animé. La contrainte UNIQUE sur le couple user + anime garantit qu'un animé ne peut apparaître qu'une seule fois dans la bibliothèque d'un utilisateur.
+
+Juste à côté : review. Même principe — un utilisateur, un animé, une seule ligne possible. Et en dessous de review, la table review_like qui enregistre les likes. Là encore contrainte d'unicité : on ne peut pas liker deux fois le même avis.
+
+Au milieu en jaune : follow. C'est la relation sociale réflexive — la table pointe deux fois vers user, une fois pour le suiveur et une fois pour le suivi. Et il y a une contrainte CHECK qui interdit à un utilisateur de se suivre lui-même, directement au niveau SQL.
+
+À droite en bleu : la messagerie. Un utilisateur ne participe pas directement à une conversation — il passe par conversation_participant. Ce découpage en trois tables permet d'étendre facilement les conversations à plus de deux participants si nécessaire.
+
+Et tout à droite en vert : les groupes. Un groupe est lié à un animé — c'est le groupe officiel de discussion. Les membres et les messages sont dans des tables séparées. Les group_message ont un champ deleted_at pour la suppression logique par les modérateurs.
+
+Ce qui est important ici c'est de voir que chaque relation répond à un besoin métier précis. Si j'avais tout mis dans une seule table, je n'aurais pas pu gérer correctement les contraintes d'intégrité, les suppressions en cascade, ou les droits différents selon les rôles.
+
+Transition : sur cette base de données, j'ai ajouté un espace d'administration.
 
 ---
 
@@ -194,7 +218,35 @@ L'interet est de montrer que l'application n'est pas seulement un prototype util
 
 Techniquement, cette partie s'appuie sur des routes protegees par role. Un utilisateur classique ne peut pas acceder a ces endpoints, meme s'il connait l'URL.
 
-Transition : pour securiser le developpement, j'ai mis en place une strategie de tests.
+Transition : avant de passer aux tests, je vais vous montrer rapidement comment j'ai organisé l'infrastructure et ce que serait le déploiement en production.
+
+---
+
+## Slide 12b - DevOps et Déploiement - 2 min
+
+En développement, j'utilise Docker Compose pour lancer l'infrastructure. Trois conteneurs : PostgreSQL, Redis, et le backend Node.js.
+
+PostgreSQL tourne sur le port 5433 plutôt que 5432, parce que j'avais déjà une installation native de PostgreSQL sur ma machine Windows qui occupait le port standard. Docker permet de gérer ça proprement avec un simple mapping de ports.
+
+Redis tourne en mode persistant avec appendonly yes — les données sont sauvegardées sur disque et ne disparaissent pas si le conteneur redémarre.
+
+Le backend, lui, je l'ai choisi de le lancer directement sur la machine hôte avec npm run dev plutôt qu'en conteneur. La raison : Docker Desktop sur Windows ne propage pas correctement les événements de modification de fichiers au système Linux du conteneur. Du coup nodemon — qui redémarre le serveur automatiquement quand on modifie un fichier — ne détectait aucun changement. Lancer le backend en local a réglé le problème.
+
+Un autre avantage de Docker : la base de données est initialisée automatiquement. J'ai un fichier init.sql qui est exécuté au premier démarrage du conteneur PostgreSQL. Il crée les types ENUM, toutes les tables, les contraintes et les index. Quelqu'un qui clone le projet et fait docker compose up a une base opérationnelle en 15 secondes.
+
+Si ce projet devait passer en production, voilà comment je l'organiserais.
+
+Le backend serait déployé sur un VPS ou une plateforme comme Railway. L'image Docker serait construite en multi-stage : une étape qui compile TypeScript en JavaScript, puis une image finale légère sans les outils de développement. Les variables d'environnement — JWT secret, mots de passe de base — seraient injectées par la plateforme, jamais dans le code.
+
+La base de données serait remplacée par un service managé comme Supabase, avec des sauvegardes automatiques.
+
+Pour le frontend mobile, Expo propose un service de build appelé EAS Build qui génère directement un APK ou un AAB signé pour le Google Play Store.
+
+Et pour le CI/CD, j'ai déjà un workflow GitHub Actions qui lance le lint, la vérification TypeScript et les 38 tests Jest à chaque push. Les tests sont entièrement mockés, donc pas besoin de base de données réelle en intégration continue.
+
+Transition : maintenant je vais vous montrer la stratégie de tests mise en place.
+
+---
 
 ---
 
@@ -328,23 +380,31 @@ Transition : je passe maintenant à la démonstration.
 
 ---
 
-## Slide 19 - Scenario de demo - 5 min
+## Slide Démo - Vidéo enregistrée - 5 min
 
-Pour la demo, je vais suivre un parcours utilisateur puis un parcours administrateur.
+La démonstration que je vais vous montrer a été enregistrée directement sur l'émulateur Android, sur un Pixel 10 Pro XL en API level 33. J'ai fait ce choix pour éviter tout aléa technique le jour J — connexion réseau, lancement de l'émulateur, données qui ne s'affichent pas — et pour pouvoir me concentrer sur les explications plutôt que sur la manipulation en direct.
 
-Je commence par creer ou connecter un utilisateur. Ensuite, je recherche un anime, par exemple Attack on Titan ou Naruto, et je l'ajoute a ma bibliotheque avec un statut.
+[ Lancer la vidéo ]
 
-Je vais ensuite ouvrir la fiche de l'anime, creer un avis, lui donner une note et montrer la visibilite publique ou privee. C'est un bon endroit pour rappeler que les avis sont prives par defaut.
+Je vais commenter ce que vous voyez au fur et à mesure.
 
-Ensuite, je rejoins le groupe associe a l'anime et j'envoie un message. Cela montre le lien entre une donnee externe, l'anime, et une fonctionnalite sociale interne a l'application.
+Parcours utilisateur — commenter en direct pendant la vidéo :
 
-Si le temps le permet, je montre le follow d'un autre utilisateur et l'acces a son profil.
+"Ici je me connecte avec le compte de test. Vous voyez l'écran d'accueil qui affiche les animés populaires récupérés depuis l'API Jikan en temps réel."
 
-Pour le parcours administrateur, je me connecte avec un compte admin, j'ouvre le panneau d'administration, je montre les statistiques, puis une action de moderation : par exemple changer la visibilite d'un avis ou supprimer un message de groupe.
+"Je recherche Attack on Titan. Les résultats arrivent immédiatement — c'est Jikan qui répond, pas ma base de données. J'ajoute l'animé à ma bibliothèque avec le statut En cours."
 
-Phrase utile si la demo ralentit : "Je garde la demo volontairement courte, parce que l'objectif est de montrer les parcours principaux et non de parcourir tous les ecrans."
+"J'ouvre la fiche de l'animé. Vous voyez la note MyAnimeList, les genres, le synopsis. Je vais maintenant écrire un avis. Je mets une note de 9.5 sur 10. Par défaut, cet avis est privé — je dois explicitement choisir de le rendre public."
 
-Transition : apres la version actuelle, voici les axes d'amelioration.
+"Je rejoins le groupe de discussion officiel lié à cet animé. Ce groupe a été créé automatiquement à la première demande d'adhésion. J'envoie un message."
+
+Parcours administrateur — commenter :
+
+"Je me connecte maintenant avec le compte administrateur. Dans l'écran profil, j'ai accès au panneau d'administration. Je peux voir les statistiques globales. Je vais modérer un message de groupe — ici c'est une suppression logique, le message n'est pas effacé de la base mais marqué comme supprimé avec un timestamp. Et je vais suspendre un utilisateur pour 7 jours."
+
+Phrase de transition si la vidéo avance vite : "Je mets la vidéo en pause ici si vous souhaitez qu'on s'attarde sur un écran en particulier."
+
+Transition : après cette démonstration, voici les axes d'amélioration que j'ai identifiés.
 
 ---
 
