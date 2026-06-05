@@ -234,63 +234,97 @@ Transition : je vais maintenant montrer quelques choix techniques dans le code.
 
 ## Slide 15 - Middleware JWT - 2 min 30
 
-Ce middleware est central, car il protege les routes authentifiees.
+Sur cette slide je montre le middleware d'authentification. C'est lui qui protège toutes les routes qui nécessitent d'être connecté. Il s'exécute avant le controller, à chaque requête.
 
-Son role est de lire le header Authorization, d'extraire le token Bearer, de verifier sa validite avec jwt.verify, puis de verifier dans Redis si le token a ete blacklisté.
+Je vais le lire ligne par ligne.
 
-Si le token est absent, invalide, expire ou blacklisté, la requete est rejetee avec une erreur 401. Si tout est valide, le middleware ajoute les informations utilisateur dans la requete, ce qui permet aux controllers suivants de connaitre l'utilisateur connecte.
+La première chose que je fais : je lis le header Authorization de la requête et j'en extrais le token. Ce header ressemble à "Bearer eyJ...". Si ce header est absent ou mal formé, j'arrête immédiatement et je renvoie une erreur 401 — token manquant.
 
-L'interet de Redis ici est la deconnexion immediate. Un JWT est normalement stateless : tant qu'il n'est pas expire, il reste valide. En ajoutant une blacklist Redis avec TTL, je peux invalider le token au logout sans stocker tous les tokens en base.
+Ensuite — et c'est la partie importante pour la déconnexion — je demande à Redis si ce token a été blacklisté. Quand un utilisateur se déconnecte, son token est placé dans Redis avec une durée de vie égale au temps qui lui restait avant expiration. Donc si quelqu'un essaie de réutiliser un token après logout, Redis répond "oui ce token existe" et je bloque la requête avec une erreur 401.
 
-C'est un bon compromis entre performance et controle de session.
+Troisième étape : jwt.verify. C'est là que je vérifie la signature cryptographique du token et sa date d'expiration. Si le token a été falsifié ou s'il est expiré, jwt.verify lève une exception que je capture.
 
-Transition : cote backend, ce middleware s'insere dans une architecture Controller / Service.
+Enfin, si tout est valide, j'injecte les informations de l'utilisateur — son ID et son rôle — directement dans l'objet request. Comme ça, tous les controllers qui viennent après ont accès à req.user sans avoir besoin de refaire une requête en base.
+
+Ce qui est important à retenir : la blacklist Redis permet de révoquer un token immédiatement. Sans ça, un JWT resterait valable jusqu'à son expiration même si l'utilisateur s'est déconnecté.
+
+Transition : ce middleware s'insère dans une architecture Controller / Service que je vais vous montrer maintenant.
 
 ---
 
 ## Slide 16 - Pattern Controller / Service - 2 min 30
 
-Sur cette slide, je montre la separation entre controller et service.
+Sur cette slide j'ai l'exemple de la création ou mise à jour d'un avis — c'est un bon exemple parce qu'il y a une règle métier intéressante derrière.
 
-Le controller gere le monde HTTP. Il recupere la requete, valide les parametres avec Zod, appelle le service et renvoie une reponse JSON avec le bon statut.
+À gauche, le controller. Son rôle est uniquement de gérer la partie HTTP.
 
-Le service, lui, contient la logique metier. Dans l'exemple de l'avis, il verifie s'il existe deja un avis pour le couple utilisateur/anime. S'il existe, il le met a jour. Sinon, il le cree avec une visibilite privee par defaut.
+La première ligne du controller : je valide les données qui arrivent avec Zod. Je vérifie que l'animeId dans l'URL est bien une chaîne de caractères, et que le corps de la requête contient une note valide, un commentaire éventuel, une visibilité. Si quelque chose est incorrect, Zod renvoie une erreur 400 directement — le service n'est même pas appelé.
 
-Cette separation apporte deux avantages. D'abord, le code est plus lisible : chacun a une responsabilite precise. Ensuite, les tests sont plus simples, car je peux tester le service sans simuler une requete Express complete.
+Ensuite je convertis l'animeId en entier, parce que dans l'URL c'est toujours une chaîne de caractères.
 
-C'est un pattern que j'ai applique sur les domaines principaux : auth, users, animes, reviews, messages, groups et admin.
+Puis j'appelle le service en lui passant l'ID de l'utilisateur connecté — que j'ai récupéré depuis req.user, injecté par le middleware JWT — l'ID de l'animé, et les données de l'avis.
 
-Transition : la validation et le hachage completent cette architecture.
+Enfin je renvoie la réponse HTTP avec un statut 201 et les données de l'avis.
 
----
+À droite, le service. Lui ne connaît pas HTTP, il ne sait pas ce qu'est une requête ou une réponse. Il contient uniquement la logique métier.
 
-## Slide 17 - Zod et bcrypt - 2 min
+Et la logique ici, c'est la suivante : je fais une requête en base pour vérifier si cet utilisateur a déjà un avis sur cet animé. La contrainte métier, c'est qu'on ne peut avoir qu'un seul avis par animé.
 
-Zod sert a valider les donnees entrantes avant la logique metier. Par exemple, pour un avis, je peux imposer une note entre 0 et 10, limiter la longueur du commentaire et contraindre la visibilite a deux valeurs possibles : PUBLIC ou PRIVE.
+Si un avis existe déjà — je le mets à jour. C'est la partie update.
 
-Cela evite d'avoir des donnees incoherentes en base et permet de retourner des erreurs claires au frontend.
+Si aucun avis n'existe — je le crée. Et là il y a un détail important : je force la visibilité à "PRIVÉ" par défaut. L'utilisateur doit explicitement choisir de rendre son avis public. C'est un choix de conception intentionnel pour respecter la vie privée.
 
-bcrypt intervient au moment de l'inscription. Le mot de passe est hache avec un cout de calcul avant d'etre stocke. Le backend ne conserve donc jamais le mot de passe en clair.
+Ce pattern, je l'ai appliqué sur tous les domaines : auth, bibliothèque, avis, messagerie, groupes, admin. L'avantage concret c'est que je peux tester le service sans démarrer Express — c'est exactement ce que font mes tests Jest.
 
-Ces deux outils ont des roles differents mais complementaires : Zod protege l'entree des donnees, bcrypt protege une donnee sensible meme si la base etait compromise.
-
-Transition : cote frontend, j'ai aussi cherche a centraliser les responsabilites.
+Transition : Zod et bcrypt complètent cette architecture du côté de la validation et de la sécurité.
 
 ---
 
-## Slide 18 - Redux AsyncThunk et Axios - 2 min
+## Slide 17 - Zod et bcrypt - 2 min 30
 
-Cote mobile, Redux Toolkit structure les appels API avec createAsyncThunk.
+Sur cette slide je montre deux outils qui protègent le backend à des niveaux différents.
 
-Un thunk gere les trois etats principaux : pending pour le chargement, fulfilled pour la reussite, rejected pour l'erreur. Cela rend l'interface plus predictable : je sais quand afficher un spinner, une erreur ou les donnees.
+À gauche, Zod. C'est le schéma de validation pour la création d'un avis.
 
-Axios est configure avec un intercepteur. Avant chaque requete, il recupere le token stocke et l'ajoute dans le header Authorization. Apres chaque reponse, il normalise les erreurs.
+Première chose : la note. Je déclare que ce doit être un nombre entre 0 et 10. Jusque là c'est classique. Mais j'ajoute une contrainte supplémentaire avec refine : je vérifie que la note multipliée par 2 est un entier. Ça peut paraître bizarre, mais c'est exactement ça qui me garantit que la note est un multiple de 0.5 — donc 0, 0.5, 1, 1.5, jusqu'à 10. Si quelqu'un envoie 7.3, c'est refusé. Si quelqu'un envoie la chaîne "abc", c'est aussi refusé immédiatement avec un message d'erreur clair.
 
-Sans cet intercepteur, il faudrait repeter la recuperation du token dans chaque appel API. Ici, le code est centralise et les slices restent concentrees sur leur domaine metier.
+Le commentaire est optionnel, mais s'il est présent je limite sa longueur à 2000 caractères.
 
-Cette partie montre aussi le lien entre les conventions backend et frontend : les donnees venant de la base sont parfois en snake_case, puis mappees en camelCase pour les composants React Native.
+La visibilité n'accepte que deux valeurs possibles : "PUBLIC" ou "PRIVE". Toute autre valeur est rejetée par Zod avant d'atteindre la base de données.
 
-Transition : je passe maintenant a la demonstration.
+Ce que ça évite concrètement : des données corrompues en base, des injections sémantiques, et des erreurs silencieuses.
+
+À droite, bcrypt. C'est la partie inscription.
+
+Première étape : je vérifie si l'email existe déjà en base. Si c'est le cas, je lance une AppError avec le code 409 — conflit. L'utilisateur voit "Email déjà utilisé".
+
+Si l'email est libre, je hache le mot de passe avec bcrypt, avec un coût de 12. Ce coût signifie 2 à la puissance 12 itérations de hachage. Même avec un ordinateur très puissant, tester des millions de mots de passe par force brute prendrait des années.
+
+Ensuite je crée l'utilisateur en base avec le hash — jamais le mot de passe en clair. Et je génère un token JWT pour que l'utilisateur soit directement connecté après inscription.
+
+Ces deux outils se complètent : Zod protège les données avant qu'elles rentrent dans le système, bcrypt protège une donnée sensible même si quelqu'un accédait directement à la base.
+
+Transition : côté frontend, j'ai centralisé la gestion d'état et les appels API.
+
+---
+
+## Slide 18 - Gestion d'état frontend - 1 min 30
+
+Sur cette slide je montre comment fonctionne le frontend du point de vue des données.
+
+Le principe de Redux, c'est un état centralisé. Au lieu que chaque écran gère ses propres données dans son coin, tout passe par un store unique. J'ai 8 slices — auth, bibliothèque, avis, social, messagerie, groupes, et ainsi de suite. Chaque slice gère un domaine précis.
+
+Le flux est toujours le même, et c'est ça qui rend le code prévisible.
+
+Quand l'utilisateur fait quelque chose — par exemple appuyer sur "Ajouter à ma bibliothèque" — ça déclenche une action dans le slice correspondant. Ce slice fait l'appel API. La réponse est reçue et stockée dans le store. Et automatiquement, tous les composants qui dépendent de ces données se mettent à jour.
+
+Ce qu'il faut retenir : l'écran n'a pas besoin de savoir comment fonctionne l'API. Il dit juste "j'ai besoin de ces données" et le store lui répond.
+
+Pour les appels API, j'utilise Axios avec deux intercepteurs configurés une seule fois. Avant chaque requête, le JWT est injecté automatiquement dans le header — aucun écran n'a besoin d'y penser. Après chaque réponse, les erreurs sont normalisées en un message lisible pour l'utilisateur.
+
+Et un dernier détail : la base de données utilise snake_case — id_user, created_at. Le frontend JavaScript utilise camelCase — userId, createdAt. Chaque slice possède une petite fonction de conversion pour transformer les données à la réception.
+
+Transition : je passe maintenant à la démonstration.
 
 ---
 
