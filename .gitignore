@@ -1,6 +1,10 @@
 # Dépendances
 node_modules/
 
+# Backup git (renommage temporaire)
+.git_backup/
+**/.git_backup/
+
 # Variables d'environnement réelles (jamais commitées)
 .env
 AnimeTracker/.env
